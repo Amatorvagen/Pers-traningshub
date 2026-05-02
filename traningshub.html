@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Träningshub">
+<title>Pers Träningshub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f2f4f0; -webkit-text-size-adjust: 100%; }
+  input, textarea, select, button { font-size: 16px !important; }
+  input[type="range"] { font-size: 16px !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const SUPABASE_URL = "https://amtzgpiddevnuoxpvevj.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdHpncGlkZGV2bnVveHB2ZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDEwMDMsImV4cCI6MjA5MzMxNzAwM30.LDs1iwgKQfT7HOr4Ya1glkm2LT67MXygPihAFbP1qA8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const { useState, useEffect } = React;
+
+const FEELINGS = ["💀","😓","😐","💪","🔥"];
+const FEELING_LABELS = ["Kört slut","Tung","Ok","Bra","Stark"];
+
+const QUOTES = [
+  "Disciplin är att göra det du bestämde dig för när humöret var bättre.",
+  "Du behöver inte känna för det. Du behöver bara göra det.",
+  "Varje rep du inte vill göra är det viktigaste repet.",
+  "Kettlebells: billigare än terapi och ungefär lika smärtsamt.",
+  "Du ångrar aldrig ett pass. Du ångrar alltid ett inställt.",
+  "Kroppen håller alltid mer än huvudet tror.",
+  "Det går inte att köpa sig fit. Men man kan svettas sig dit.",
+  "Vila är en del av programmet. Soffan är inte det.",
+  "Starka ryggar bär lätta bördor.",
+  "Det är inte tungt. Det är bara ovant.",
+  "24 kg idag. 28 kg i december. Det är planen.",
+  "Snatch: för den som tycker att marklyft är lite för enkelt.",
+  "Bra sömn, bra mat, bra pass. Välj tre.",
+  "Press. ABC. Upprepa tills December.",
+  "Dan John sa det. Du lyssnade. Klokt.",
+];
+
+const C = {
+  bg:"#f2f4f0",surface:"#ffffff",surfaceAlt:"#f7f8f5",
+  border:"#dde0d8",border2:"#c8ccc2",text:"#2c3028",muted:"#7a8270",faint:"#b0b8a8",
+  accent:"#3d6b45",accentLight:"#e8f0e9",accentMid:"#6a9e72",
+  press:"#e8eef5",pressBorder:"#b8cfe0",pressText:"#3a5f7a",
+  abc:"#f0ece4",abcBorder:"#d4c8a8",abcText:"#6b5a2e",
+  other:"#f5f0f8",otherBorder:"#c8b8d8",otherText:"#5a3a7a",
+  orange:"#c07040",orangeBg:"#fdf3ec",orangeBorder:"#e8c8a8",
+  red:"#b84040",shadow:"rgba(44,48,40,0.07)",
+  missedBg:"#f0ede8",missedBorder:"#c8bfb0",missedText:"#9a9080",
+};
+
+const WEEK_SCHEDULE = [
+  {week:"V1",phase:"Inlärn.",passes:[
+    {day:"Tis",date:"2026-03-31",dateLabel:"31 mar",type:"Press",detail:"5–6 set · 2·3·5",badge:"Inlärning v1",weight:"24 kg"},
+    {day:"Tor",date:"2026-04-02",dateLabel:"2 apr",type:"ABC",detail:"Mål: 10 set · 90 sek",badge:"Inlärning v1",weight:"Dubbla 24 kg"},
+    {day:"Lör",date:"2026-04-04",dateLabel:"4 apr",type:"Press",detail:"5–6 set · 2·3·5",badge:"Inlärning v1",weight:"24 kg"},
+  ]},
+  {week:"V2",phase:"Inlärn.",passes:[
+    {day:"Tis",date:"2026-04-07",dateLabel:"7 apr",type:"ABC",detail:"Mål: 11 set · 90 sek",badge:"Inlärning v2",weight:"Dubbla 24 kg"},
+    {day:"Tor",date:"2026-04-09",dateLabel:"9 apr",type:"Press",detail:"5–6 set · 2·3·5",badge:"Inlärning v2",weight:"24 kg"},
+    {day:"Lör",date:"2026-04-11",dateLabel:"11 apr",type:"ABC",detail:"Mål: 12 set · 90 sek",badge:"Inlärning v2",weight:"Dubbla 24 kg"},
+  ]},
+  {week:"V3",phase:"Bygg 1",passes:[
+    {day:"Tis",date:"2026-04-14",dateLabel:"14 apr",type:"Press",detail:"6–7 set · 2·3·5",badge:"Byggevecka 1",weight:"24 kg"},
+    {day:"Tor",date:"2026-04-16",dateLabel:"16 apr",type:"ABC",detail:"Mål: 13 set · 90 sek",badge:"Byggevecka 1",weight:"Dubbla 24 kg"},
+    {day:"Lör",date:"2026-04-18",dateLabel:"18 apr",type:"Press",detail:"10 set · 2·3·5",badge:"Byggevecka 1",weight:"24 kg"},
+  ]},
+  {week:"V4",phase:"Bygg 2",passes:[
+    {day:"Tis",date:"2026-04-22",dateLabel:"22 apr",type:"ABC",detail:"Mål: 14 set · 90 sek",badge:"Byggevecka 2",weight:"Dubbla 24 kg"},
+    {day:"Tor",date:"2026-04-24",dateLabel:"24 apr",type:"Press",detail:"7–8 set · 2·3·5",badge:"Byggevecka 2",weight:"24 kg"},
+    {day:"Lör",date:"2026-04-26",dateLabel:"26 apr",type:"ABC",detail:"Mål: 15 set · 90 sek",badge:"Byggevecka 2",weight:"Dubbla 24 kg"},
+  ]},
+  {week:"V5",phase:"Bygg 3",passes:[
+    {day:"Tis",date:"2026-04-29",dateLabel:"29 apr",type:"Press",detail:"8 set · 2·3·5",badge:"Byggevecka 3",weight:"24 kg"},
+    {day:"Tor",date:"2026-05-01",dateLabel:"1 maj",type:"ABC",detail:"Mål: 16 set · 90 sek",badge:"Byggevecka 3",weight:"Dubbla 24 kg"},
+    {day:"Lör",date:"2026-05-03",dateLabel:"3 maj",type:"Press",detail:"10 set · 2·3·5",badge:"Byggevecka 3",weight:"24 kg"},
+  ]},
+  {week:"V6",phase:"Bygg 4",passes:[
+    {day:"Tis",date:"2026-05-06",dateLabel:"6 maj",type:"ABC",detail:"Mål: 17 set · 90 sek",badge:"Byggevecka 4",weight:"Dubbla 24 kg"},
+    {day:"Tor",date:"2026-05-08",dateLabel:"8 maj",type:"Press",detail:"9 set · 2·3·5",badge:"Byggevecka 4",weight:"24 kg"},
+    {day:"Lör",date:"2026-05-10",dateLabel:"10 maj",type:"ABC",detail:"Mål: 18 set · 90 sek",badge:"Byggevecka 4",weight:"Dubbla 24 kg"},
+  ]},
+  {week:"V7",phase:"Mål",passes:[
+    {day:"Tis",date:"2026-05-13",dateLabel:"13 maj",type:"Press",detail:"10 set · mot 100 reps",badge:"Målfas",weight:"24 kg"},
+    {day:"Tor",date:"2026-05-15",dateLabel:"15 maj",type:"ABC",detail:"Mål: 19 set · 90 sek",badge:"Målfas",weight:"Dubbla 24 kg"},
+    {day:"Lör",date:"2026-05-17",dateLabel:"17 maj",type:"Press",detail:"10 set · push mot 100",badge:"Målfas",weight:"24 kg"},
+  ]},
+  {week:"V8",phase:"Mål",passes:[
+    {day:"Tis",date:"2026-05-20",dateLabel:"20 maj",type:"ABC",detail:"Mål: 20 set · 90 sek",badge:"Målfas",weight:"Dubbla 24 kg"},
+    {day:"Tor",date:"2026-05-22",dateLabel:"22 maj",type:"Press",detail:"10 set · 100 reps ✓",badge:"Målfas",weight:"24 kg"},
+    {day:"Lör",date:"2026-05-24",dateLabel:"24 maj",type:"ABC",detail:"Mål: 23 set · 78 sek 🎯",badge:"Målfas",weight:"Dubbla 24 kg"},
+  ]},
+  {week:"V9",phase:"→ Giant",passes:[
+    {day:"Tis",date:"2026-05-27",dateLabel:"27 maj",type:"Övergång",detail:"Nedvarvning",badge:"Övergång",weight:"—"},
+    {day:"Tor",date:"2026-05-29",dateLabel:"29 maj",type:"Övergång",detail:"Notera utgångspunkt",badge:"Övergång",weight:"—"},
+    null,
+  ]},
+];
+
+const ALL_PASSES = WEEK_SCHEDULE.flatMap(w => w.passes.filter(Boolean));
+
+function passColor(type) {
+  if (type==="Övergång") return {bg:C.surfaceAlt,border:C.border,text:C.muted};
+  if (type==="Press")   return {bg:C.press,border:C.pressBorder,text:C.pressText};
+  if (type==="ABC")     return {bg:C.abc,border:C.abcBorder,text:C.abcText};
+  if (type==="Annat")   return {bg:C.other,border:C.otherBorder,text:C.otherText};
+  return {bg:C.surface,border:C.border,text:C.text};
+}
+
+function formatDate(d) {
+  const days=["Sön","Mån","Tis","Ons","Tor","Fre","Lör"];
+  const months=["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+  const date=new Date(d+"T12:00:00");
+  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+}
+
+function todayStr() { return new Date().toISOString().split("T")[0]; }
+
+function emptyStege() {
+  return {two:{kg:"24",pp:0},three:{kg:"24",pp:0},five:{kg:"20",pp:0,split:""}};
+}
+
+const emptyForm = {
+  date:todayStr(),type:"Press",steges:[emptyStege()],
+  sets:"",secPerSet:"",bonusSets:"",pauses:[],
+  otherTitle:"",otherNotes:"",
+  feeling:2,sleep:2,stress:2,
+  prehabArms:false,prehabKnees:false,
+  bodyLog:"",notes:"",
+};
+
+function totalPP(log) {
+  if (!log.steges) return 0;
+  return log.steges.reduce((sum,s)=>sum+(s.two?.pp||0)+(s.three?.pp||0)+(s.five?.pp||0),0);
+}
+
+// ── SUPABASE HELPERS ──
+async function dbLoadLogs() {
+  const {data,error} = await sb.from("training_logs").select("*").order("date",{ascending:false});
+  if (error) throw error;
+  return data.map(r => ({...r.data, id: r.id, date: r.date}));
+}
+
+async function dbSaveLog(entry) {
+  const {id, date, ...data} = entry;
+  const {error} = await sb.from("training_logs").upsert({id, date, data:{...data,id,date}});
+  if (error) throw error;
+}
+
+async function dbDeleteLog(id) {
+  const {error} = await sb.from("training_logs").delete().eq("id",id);
+  if (error) throw error;
+}
+
+async function dbLoadState(key) {
+  const {data,error} = await sb.from("app_state").select("value").eq("key",key).single();
+  if (error) return null;
+  return data?.value || null;
+}
+
+async function dbSaveState(key, value) {
+  const {error} = await sb.from("app_state").upsert({key, value});
+  if (error) throw error;
+}
+
+const IS = {
+  background:C.surface,border:`1px solid ${C.border}`,color:C.text,
+  padding:"8px 10px",borderRadius:6,
+  fontFamily:"'DM Mono',monospace",fontSize:"16px",
+  width:"100%",outline:"none",
+  WebkitAppearance:"none",touchAction:"manipulation",
+};
+
+const labelStyle = {fontSize:"0.52rem",letterSpacing:"0.14em",textTransform:"uppercase",color:C.faint};
+
+function Row({label,children}) {
+  return (
+    <div>
+      <label style={{display:"block",fontSize:"0.58rem",letterSpacing:"0.14em",textTransform:"uppercase",color:C.muted,marginBottom:7}}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Stat({label,val}) {
+  return (
+    <div>
+      <div style={{fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint}}>{label}</div>
+      <div style={{fontSize:"0.72rem",color:C.muted,fontWeight:500}}>{val}</div>
+    </div>
+  );
+}
+
+function Slider({value,onChange,labels,accent}) {
+  return (
+    <div>
+      <input type="range" min={1} max={5} value={value} onChange={e=>onChange(Number(e.target.value))}
+        style={{width:"100%",accentColor:accent,cursor:"pointer",fontSize:"16px"}} />
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+        {labels.map((l,i)=>(
+          <span key={i} style={{fontSize:"0.52rem",color:value===i+1?accent:C.faint,letterSpacing:"0.06em"}}>{l}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const ppBtn = {
+  background:C.bg,border:`1px solid ${C.border}`,color:C.muted,
+  width:26,height:26,borderRadius:3,cursor:"pointer",
+  fontSize:"1rem",fontFamily:"inherit",padding:0,
+  display:"flex",alignItems:"center",justifyContent:"center",
+  touchAction:"manipulation",
+};
+
+function StegeCell({kg,pp,split,onKg,onPP,onSplit,maxReps,showSplit}) {
+  const clean=maxReps-pp, isClean=pp===0&&!split;
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+      <div style={{display:"flex",gap:3}}>
+        {["20","24"].map(w=>(
+          <button key={w} onClick={()=>onKg(w)} style={{
+            flex:1,background:kg===w?C.accentLight:C.bg,
+            border:`1px solid ${kg===w?C.accent:C.border}`,
+            color:kg===w?C.accent:C.muted,
+            padding:"5px 0",borderRadius:3,cursor:"pointer",
+            fontSize:"0.7rem",fontFamily:"inherit",fontWeight:kg===w?700:400,
+            touchAction:"manipulation",
+          }}>{w}</button>
+        ))}
+      </div>
+      {!split && (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+          background:C.bg,border:`1px solid ${pp>0?C.orangeBorder:C.abcBorder}`,
+          borderRadius:3,padding:"3px 5px"}}>
+          <span style={{fontSize:"0.6rem",color:isClean?C.abcText:C.orange,minWidth:32}}>
+            {isClean?`${maxReps}✓`:`${clean}✓ ${pp}PP`}
+          </span>
+          <div style={{display:"flex",gap:2}}>
+            <button onClick={()=>onPP(Math.max(0,pp-1))} style={ppBtn}>−</button>
+            <button onClick={()=>onPP(Math.min(maxReps,pp+1))} style={ppBtn}>+</button>
+          </div>
+        </div>
+      )}
+      {showSplit && (
+        <input placeholder="delad? 3×24+2×20" value={split||""}
+          onChange={e=>{onSplit(e.target.value);if(e.target.value)onPP(0);}}
+          style={{...IS,fontSize:"16px",padding:"3px 5px"}} />
+      )}
+    </div>
+  );
+}
+
+function typeBadge(type) {
+  const col=passColor(type);
+  return {fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,
+    background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"2px 8px",borderRadius:4};
+}
+
+function ChartBlock({title,data,color,max,target}) {
+  const w=560,h=140,pad={top:16,right:32,bottom:32,left:28};
+  const iw=w-pad.left-pad.right,ih=h-pad.top-pad.bottom;
+  const dataMax=Math.max(...data.map(d=>d.val),max,1);
+  const ys=val=>pad.top+ih-(val/dataMax)*ih;
+  const xs=i=>pad.left+(i/Math.max(data.length-1,1))*iw;
+  const path=data.map((d,i)=>`${i===0?"M":"L"} ${xs(i)} ${ys(d.val)}`).join(" ");
+  const ty=ys(target);
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+      <h3 style={{fontFamily:"'Syne',sans-serif",fontSize:"0.7rem",letterSpacing:"0.15em",textTransform:"uppercase",color:C.muted,marginBottom:12}}>{title}</h3>
+      <div style={{overflowX:"auto"}}>
+        <svg width={Math.max(w,data.length*50)} height={h} style={{display:"block"}}>
+          <line x1={pad.left} y1={ty} x2={w-pad.right} y2={ty} stroke={color} strokeWidth={1} strokeDasharray="4 4" opacity={0.4}/>
+          <text x={w-pad.right+4} y={ty+4} fontSize={8} fill={color} opacity={0.5}>mål</text>
+          {[0.25,0.5,0.75,1].map(f=>(
+            <line key={f} x1={pad.left} y1={pad.top+ih*(1-f)} x2={w-pad.right} y2={pad.top+ih*(1-f)} stroke={C.border} strokeWidth={1}/>
+          ))}
+          <path d={path} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"/>
+          {data.map((d,i)=>(
+            <g key={i}>
+              <circle cx={xs(i)} cy={ys(d.val)} r={3.5} fill={color}/>
+              <text x={xs(i)} y={ys(d.val)-8} textAnchor="middle" fontSize={9} fill={color}>{d.val}</text>
+              <text x={xs(i)} y={h-5} textAnchor="middle" fontSize={7} fill={C.faint}>{d.label}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function Empty({text}) {
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"20px 16px",textAlign:"center"}}>
+      <p style={{fontSize:"0.63rem",color:C.faint}}>{text}</p>
+    </div>
+  );
+}
+
+function SettingsView({logs,passIndex,onImport}) {
+  const [importText,setImportText]=useState("");
+  const [importStatus,setImportStatus]=useState(null);
+  const [copied,setCopied]=useState(false);
+  const [showBackup,setShowBackup]=useState(false);
+  const backupText=JSON.stringify({logs,passIndex,exportedAt:new Date().toISOString()});
+
+  function handleCopy() {
+    navigator.clipboard.writeText(backupText).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);}).catch(()=>{
+      const el=document.getElementById("backup-ta");
+      if(el){el.select();document.execCommand("copy");}
+      setCopied(true);setTimeout(()=>setCopied(false),2500);
+    });
+  }
+
+  async function handleImport() {
+    try {
+      const data=JSON.parse(importText.trim());
+      if(!data.logs) throw new Error("Ogiltig data");
+      await onImport(data);
+      setImportStatus(`✓ Återställt! ${data.logs.length} pass inlästa.`);
+      setImportText("");
+    } catch { setImportStatus("⚠️ Kunde inte läsa datan – kontrollera att du klistrade in hela texten."); }
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+        <div style={labelStyle}>Säkerhetskopia (JSON)</div>
+        <p style={{fontSize:"0.65rem",color:C.muted,margin:"8px 0 12px",lineHeight:1.7}}>
+          Backup om något går fel. Supabase är primär lagring.
+        </p>
+        <p style={{fontSize:"0.58rem",color:C.faint,marginBottom:10}}>{logs.length} pass · schemaindex {passIndex}</p>
+        <button onClick={()=>setShowBackup(!showBackup)} style={{background:C.bg,border:`1px solid ${C.border}`,color:C.muted,padding:"8px 16px",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontSize:"0.68rem",marginBottom:showBackup?10:0,touchAction:"manipulation"}}>
+          {showBackup?"Dölj text":"Visa backup-text"}
+        </button>
+        {showBackup && (
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <textarea id="backup-ta" readOnly value={backupText} rows={6}
+              style={{...IS,fontSize:"12px",color:C.faint,resize:"none",fontFamily:"monospace"}}/>
+            <button onClick={handleCopy} style={{background:copied?C.accent:C.bg,border:`1px solid ${copied?C.accent:C.border}`,color:copied?"#fff":C.muted,padding:"9px 18px",borderRadius:6,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.72rem",touchAction:"manipulation"}}>
+              {copied?"✓ Kopierat!":"Kopiera till urklipp"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+        <div style={labelStyle}>Återställ från backup</div>
+        <p style={{fontSize:"0.65rem",color:C.muted,margin:"8px 0 12px",lineHeight:1.7}}>Klistra in backup och tryck Återställ.</p>
+        <textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="Klistra in backup-text här..." rows={5}
+          style={{...IS,fontSize:"16px",resize:"none",fontFamily:"monospace",marginBottom:10}}/>
+        <button onClick={handleImport} disabled={!importText.trim()} style={{background:importText.trim()?C.accent:C.bg,border:`1px solid ${importText.trim()?C.accent:C.border}`,color:importText.trim()?"#fff":C.faint,padding:"9px 18px",borderRadius:6,cursor:importText.trim()?"pointer":"default",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.72rem",touchAction:"manipulation"}}>
+          Återställ data
+        </button>
+        {importStatus && <p style={{fontSize:"0.65rem",color:C.accent,marginTop:10,fontWeight:600}}>{importStatus}</p>}
+      </div>
+
+      <div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:10,padding:"14px 16px"}}>
+        <div style={{...labelStyle,color:C.accentMid}}>Lagring</div>
+        <p style={{fontSize:"0.63rem",color:C.accent,marginTop:6,lineHeight:1.7}}>
+          Data sparas i Supabase och synkar automatiskt mellan enheter. JSON-backup är extra säkerhet.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [logs,setLogs]=useState([]);
+  const [form,setForm]=useState(emptyForm);
+  const [view,setView]=useState("home");
+  const [saved,setSaved]=useState(false);
+  const [loading,setLoading]=useState(true);
+  const [dbError,setDbError]=useState(null);
+  const [confirmId,setConfirmId]=useState(null);
+  const [passIndex,setPassIndex]=useState(0);
+  const [quote]=useState(()=>QUOTES[Math.floor(Math.random()*QUOTES.length)]);
+
+  useEffect(()=>{
+    async function load() {
+      try {
+        const [fetchedLogs, idxVal] = await Promise.all([dbLoadLogs(), dbLoadState("pass-index")]);
+        setLogs(fetchedLogs);
+        if (idxVal !== null) setPassIndex(Number(idxVal));
+      } catch(e) {
+        setDbError("Kunde inte ansluta till databasen. Kontrollera din internetanslutning.");
+        console.error(e);
+      }
+      setLoading(false);
+    }
+    load();
+  },[]);
+
+  async function saveLogs(nl) {
+    setLogs(nl);
+  }
+
+  async function handleSubmit() {
+    if (!form.date||!form.type) return;
+    const entry={...form,id:Date.now()};
+    try {
+      await dbSaveLog(entry);
+      const nl=[entry,...logs].sort((a,b)=>b.date.localeCompare(a.date));
+      setLogs(nl);
+      setForm({...emptyForm,date:todayStr()});
+      setSaved(true);
+      setTimeout(()=>setSaved(false),2000);
+      setView("history");
+    } catch(e) {
+      alert("Kunde inte spara passet: "+e.message);
+    }
+  }
+
+  async function deleteLog(id) {
+    try {
+      await dbDeleteLog(id);
+      setLogs(logs.filter(l=>l.id!==id));
+    } catch(e) { alert("Kunde inte radera: "+e.message); }
+  }
+
+  async function saveIndex(i) {
+    const idx=Math.max(0,Math.min(i,ALL_PASSES.length));
+    setPassIndex(idx);
+    try { await dbSaveState("pass-index", String(idx)); } catch(e) { console.error(e); }
+  }
+
+  async function handleImport(data) {
+    try {
+      for (const entry of data.logs) { await dbSaveLog(entry); }
+      const refreshed = await dbLoadLogs();
+      setLogs(refreshed);
+      if (typeof data.passIndex==="number") await saveIndex(data.passIndex);
+    } catch(e) { alert("Import misslyckades: "+e.message); }
+  }
+
+  function updateStege(idx,col,field,val) {
+    const steges=form.steges.map((s,i)=>i!==idx?s:{...s,[col]:{...s[col],[field]:val}});
+    setForm({...form,steges});
+  }
+
+  const abcLogs=logs.filter(l=>l.type==="ABC"&&l.sets&&l.secPerSet);
+  const pressLogs=logs.filter(l=>l.type==="Press"&&l.steges);
+  const nextPass=ALL_PASSES[passIndex]||null;
+  const NAV=[["home","Hem"],["log","+ Logga"],["history","Historik"],["chart","Trend"],["schedule","Schema"],["settings","⚙️"]];
+
+  if (loading) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.bg,fontFamily:"'DM Mono',monospace",color:C.muted,fontSize:"0.8rem"}}>
+      Laddar…
+    </div>
+  );
+
+  return (
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Mono','Courier New',monospace"}}>
+      {dbError && (
+        <div style={{background:"#fff0f0",borderBottom:"1px solid #f0b8b8",padding:"10px 20px",fontSize:"0.65rem",color:C.red,textAlign:"center"}}>
+          ⚠️ {dbError}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"18px 20px 0",boxShadow:`0 1px 4px ${C.shadow}`}}>
+        <div style={{maxWidth:680,margin:"0 auto"}}>
+          <h1 style={{fontFamily:"'Syne',sans-serif",fontSize:"1.5rem",fontWeight:800,letterSpacing:"-0.02em",color:C.text,marginBottom:1}}>
+            Pers <span style={{color:C.accent}}>Träningshub</span>
+          </h1>
+          <p style={{fontSize:"0.58rem",letterSpacing:"0.14em",textTransform:"uppercase",color:C.faint,marginBottom:12}}>ABF · Mar–Maj 2026 · Dubbla 24 kg</p>
+          <div style={{display:"flex",overflowX:"auto"}}>
+            {NAV.map(([v,label])=>(
+              <button key={v} onClick={()=>setView(v)} style={{
+                background:"transparent",border:"none",
+                borderBottom:view===v?`2px solid ${C.accent}`:"2px solid transparent",
+                color:view===v?C.accent:C.muted,
+                padding:"7px 14px",cursor:"pointer",fontSize:"0.6rem",
+                letterSpacing:"0.1em",textTransform:"uppercase",
+                fontFamily:"inherit",whiteSpace:"nowrap",fontWeight:view===v?600:400,
+                touchAction:"manipulation",
+              }}>{label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:680,margin:"0 auto",padding:"18px 20px 80px"}}>
+
+        {/* Stats bar */}
+        {logs.length>0&&view!=="schedule"&&(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
+            {[["Pass totalt",logs.length],["ABC",abcLogs.length],["Press",pressLogs.length]].map(([label,val])=>(
+              <div key={label} style={{background:C.surface,border:`1px solid ${C.border}`,padding:"9px 12px",borderRadius:8,boxShadow:`0 1px 2px ${C.shadow}`}}>
+                <div style={{fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,marginBottom:2}}>{label}</div>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:"1.3rem",fontWeight:700,color:C.accent}}>{val}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── HEM ── */}
+        {view==="home"&&(()=>{
+          const last=logs[0];
+          return (
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {/* Årsplan */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+                <div style={labelStyle}>Årsplan 2026</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+                  {[{label:"ABF",period:"Mar–Maj",active:true},{label:"Giant 3.0",period:"Jun–Jul"},{label:"ABF",period:"Aug–Sep"},{label:"KCK",period:"Okt–Nov"},{label:"🎯 30 EMOM",period:"Dec"}].map((s,i)=>(
+                    <div key={i} style={{background:s.active?C.accentLight:C.bg,border:`1px solid ${s.active?C.accent:C.border}`,borderRadius:6,padding:"5px 10px"}}>
+                      <div style={{fontSize:"0.63rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:s.active?C.accent:C.muted}}>{s.label}</div>
+                      <div style={{fontSize:"0.5rem",color:s.active?C.accentMid:C.faint,letterSpacing:"0.06em"}}>{s.period}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nästa pass */}
+              <div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:10,padding:"14px 16px"}}>
+                <div style={{...labelStyle,color:C.accentMid}}>Nästa pass</div>
+                {nextPass?(
+                  <>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>
+                      {nextPass.type} · {nextPass.day} {nextPass.dateLabel}
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.6)",borderRadius:7,padding:"10px 12px",marginBottom:10,display:"flex",flexDirection:"column",gap:5}}>
+                      {nextPass.weight&&(
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <span style={{fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44}}>Vikt</span>
+                          <span style={{fontSize:"0.68rem",color:C.accent,fontFamily:"'Syne',sans-serif",fontWeight:700}}>{nextPass.weight}</span>
+                        </div>
+                      )}
+                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <span style={{fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44}}>Mål</span>
+                        <span style={{fontSize:"0.65rem",color:C.text}}>{nextPass.detail}</span>
+                      </div>
+                      {nextPass.type==="Press"&&(
+                        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                          <span style={{fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44,paddingTop:2}}>Stege</span>
+                          <div style={{fontSize:"0.62rem",color:C.muted,lineHeight:1.7}}>
+                            <div>2 reps @ 24 kg</div><div>3 reps @ 24 kg</div><div>5 reps @ 20 kg</div>
+                          </div>
+                        </div>
+                      )}
+                      {nextPass.type==="ABC"&&(
+                        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                          <span style={{fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44,paddingTop:2}}>Rörelser</span>
+                          <div style={{fontSize:"0.62rem",color:C.muted,lineHeight:1.7}}>
+                            <div>2 cleans + 1 press + 3 squats / set</div>
+                            <div>EMOM · {nextPass.badge}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{borderLeft:`2px solid ${C.accentMid}`,paddingLeft:10,marginBottom:12}}>
+                      <p style={{fontSize:"0.62rem",color:C.accent,fontStyle:"italic",lineHeight:1.6}}>"{quote}"</p>
+                    </div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <button onClick={()=>setView("log")} style={{background:C.accent,border:"none",color:"#fff",padding:"8px 18px",borderRadius:6,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.72rem",touchAction:"manipulation"}}>Logga pass →</button>
+                      <button onClick={()=>saveIndex(passIndex+1)} style={{background:"transparent",border:`1px solid ${C.accentMid}`,color:C.accentMid,padding:"8px 14px",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontSize:"0.65rem",touchAction:"manipulation"}}>Hoppa över</button>
+                    </div>
+                  </>
+                ):(
+                  <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>Alla pass klara! 🎯</div>
+                )}
+              </div>
+
+              {/* Senaste pass */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+                <div style={labelStyle}>Senaste pass</div>
+                {last?(
+                  <div style={{marginTop:8}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+                      <span style={typeBadge(last.type)}>{last.type}</span>
+                      <span style={{fontSize:"0.6rem",color:C.muted}}>{formatDate(last.date)}</span>
+                      <span style={{fontSize:"0.85rem"}}>{FEELINGS[last.feeling]}</span>
+                    </div>
+                    {last.type==="Press"&&last.steges&&<p style={{fontSize:"0.63rem",color:C.muted}}>{last.steges.length} stegar · {totalPP(last)===0?"Inga push press 💪":`${totalPP(last)} push press`}</p>}
+                    {last.type==="ABC"&&<p style={{fontSize:"0.63rem",color:C.muted}}>{last.sets} set @ {last.secPerSet} sek{last.pauses?.length>0?` · ${last.pauses.length} paus${last.pauses.length>1?"er":""}`:""}{last.bonusSets&&Number(last.bonusSets)>0?` · +${last.bonusSets} bonus @20`:""}</p>}
+                    {last.type==="Annat"&&<p style={{fontSize:"0.63rem",color:C.muted}}>{last.otherTitle||"Övrigt pass"}</p>}
+                  </div>
+                ):(
+                  <p style={{fontSize:"0.63rem",color:C.faint,marginTop:8}}>Inga pass loggade ännu</p>
+                )}
+              </div>
+
+              {/* Kommande */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+                <div style={labelStyle}>Kommande pass</div>
+                <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:7}}>
+                  {ALL_PASSES.slice(passIndex,passIndex+5).map((p,i)=>{
+                    const col=passColor(p.type);
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+                        <span style={{fontSize:"0.58rem",color:C.faint,minWidth:56}}>{p.day} {p.dateLabel}</span>
+                        <span style={{fontSize:"0.6rem",background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"2px 8px",borderRadius:4}}>{p.type}</span>
+                        <span style={{fontSize:"0.52rem",color:C.faint}}>{p.weight}</span>
+                      </div>
+                    );
+                  })}
+                  <button onClick={()=>setView("schedule")} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"6px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.6rem",fontFamily:"inherit",marginTop:2,alignSelf:"flex-start",touchAction:"manipulation"}}>Visa hela schemat →</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCHEMA ── */}
+        {view==="schedule"&&(
+          <div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+              {[{color:C.press,border:C.pressBorder,label:"Press"},{color:C.abc,border:C.abcBorder,label:"ABC"},{color:C.missedBg,border:C.missedBorder,label:"Missat"}].map(l=>(
+                <div key={l.label} style={{display:"flex",alignItems:"center",gap:6,fontSize:"0.58rem",color:C.muted}}>
+                  <div style={{width:10,height:10,borderRadius:2,background:l.color,border:`1px solid ${l.border}`}}/>
+                  {l.label}
+                </div>
+              ))}
+            </div>
+            <div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:8,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:"0.6rem",color:C.accent,fontWeight:600}}>Pass {Math.min(passIndex+1,ALL_PASSES.length)} av {ALL_PASSES.length}</span>
+              <div style={{display:"flex",gap:6,marginLeft:"auto",flexWrap:"wrap"}}>
+                {passIndex>0&&<button onClick={()=>saveIndex(passIndex-1)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:"0.58rem",fontFamily:"inherit",touchAction:"manipulation"}}>← Ångra</button>}
+                {passIndex<ALL_PASSES.length&&<>
+                  <button onClick={()=>saveIndex(passIndex+1)} style={{background:C.accent,border:"none",color:"#fff",padding:"4px 12px",borderRadius:4,cursor:"pointer",fontSize:"0.58rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>✓ Klar</button>
+                  <button onClick={()=>saveIndex(passIndex+1)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"4px 10px",borderRadius:4,cursor:"pointer",fontSize:"0.58rem",fontFamily:"inherit",touchAction:"manipulation"}}>Missade</button>
+                </>}
+              </div>
+            </div>
+            {WEEK_SCHEDULE.map((week,wi)=>{
+              let wsi=0;
+              for(let i=0;i<wi;i++) wsi+=WEEK_SCHEDULE[i].passes.filter(Boolean).length;
+              return (
+                <div key={wi} style={{marginBottom:8}}>
+                  {(wi===0||(week.passes[0]&&week.passes[0].date.includes("-05-")&&!WEEK_SCHEDULE[wi-1]?.passes[0]?.date.includes("-05-")))&&(
+                    <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:C.muted,margin:wi===0?"0 0 10px 0":"18px 0 10px 0",paddingBottom:8,borderBottom:`1px solid ${C.border}`}}>
+                      {wi===0?"Mars / April 2026":"Maj 2026"}
+                    </div>
+                  )}
+                  <div style={{display:"grid",gridTemplateColumns:"58px 1fr 1fr 1fr",gap:7}}>
+                    <div style={{display:"flex",flexDirection:"column",justifyContent:"center",paddingTop:4}}>
+                      <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
+                      <div style={{fontSize:"0.5rem",color:C.faint,letterSpacing:"0.06em"}}>{week.phase}</div>
+                    </div>
+                    {[0,1,2].map(pi=>{
+                      const p=week.passes[pi];
+                      if(!p) return <div key={pi} style={{visibility:"hidden"}}/>;
+                      const localIdx=week.passes.slice(0,pi).filter(Boolean).length;
+                      const globalIdx=wsi+localIdx;
+                      const done=globalIdx<passIndex;
+                      const isCurrent=globalIdx===passIndex;
+                      const logged=logs.find(l=>l.date===p.date);
+                      const wasAnnat=logged?.type==="Annat";
+                      const col=passColor(p.type);
+                      const ms=done&&!logged?{bg:C.missedBg,border:C.missedBorder,text:C.missedText,dashed:true}:done&&logged?{bg:C.bg,border:C.border,text:C.faint,dashed:false}:null;
+                      const fb=ms?ms.bg:col.bg, fb2=ms?ms.border:col.border, ft=ms?ms.text:col.text;
+                      return (
+                        <div key={pi} style={{background:fb,border:`2px ${ms?.dashed?"dashed":"solid"} ${isCurrent?C.accent:fb2}`,borderRadius:6,padding:"10px 12px",minHeight:84,display:"flex",flexDirection:"column",gap:4,opacity:(done&&!logged)?0.6:done?0.5:1,boxShadow:isCurrent?`0 0 0 3px ${C.accentLight}`:done?"none":`0 1px 3px ${C.shadow}`}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                            <span style={{fontSize:"0.52rem",letterSpacing:"0.08em",textTransform:"uppercase",color:done?C.faint:C.muted}}>{p.day}</span>
+                            <span style={{fontSize:"0.52rem",color:done?C.faint:C.muted}}>{p.dateLabel}</span>
+                          </div>
+                          <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.75rem",color:done?C.faint:isCurrent?C.accent:ft}}>
+                            {wasAnnat?"Annat":p.type}{done&&logged&&!wasAnnat?" ✓":""}{done&&!logged?" —":""}{isCurrent?" ←":""}
+                          </div>
+                          <div style={{fontSize:"0.52rem",color:done?C.faint:C.accentMid,fontWeight:600}}>{p.weight}</div>
+                          <div style={{fontSize:"0.57rem",color:done?C.faint:C.muted,lineHeight:1.5}}>{p.detail}</div>
+                          {done&&!logged&&<div style={{fontSize:"0.5rem",color:C.missedText,letterSpacing:"0.06em",textTransform:"uppercase"}}>missat</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── LOGGA ── */}
+        {view==="log"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+            <Row label="Datum">
+              <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{...IS,fontSize:"16px"}}/>
+            </Row>
+            <Row label="Passtyp">
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {["Press","ABC","Annat"].map(t=>{
+                  const col=passColor(t),sel=form.type===t;
+                  return <button key={t} onClick={()=>setForm({...form,type:t})} style={{background:sel?col.bg:C.bg,border:`1px solid ${sel?col.border:C.border}`,color:sel?col.text:C.muted,padding:"7px 22px",borderRadius:6,cursor:"pointer",fontSize:"0.7rem",letterSpacing:"0.04em",fontFamily:"inherit",fontWeight:sel?700:400,touchAction:"manipulation"}}>{t}</button>;
+                })}
+              </div>
+            </Row>
+
+            {form.type==="Press"&&(
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <label style={{fontSize:"0.58rem",letterSpacing:"0.14em",textTransform:"uppercase",color:C.muted}}>Stegar</label>
+                <div style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 1fr",gap:6}}>
+                  <div/>
+                  {["2 reps","3 reps","5 reps"].map(h=><div key={h} style={{fontSize:"0.5rem",letterSpacing:"0.08em",textTransform:"uppercase",color:C.faint,textAlign:"center",paddingBottom:4}}>{h}</div>)}
+                </div>
+                {form.steges.map((s,idx)=>(
+                  <div key={idx} style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 1fr",gap:6,alignItems:"start"}}>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:10,gap:4}}>
+                      <span style={{fontSize:"0.58rem",color:C.muted}}>{idx+1}</span>
+                      {form.steges.length>1&&<button onClick={()=>setForm({...form,steges:form.steges.filter((_,i)=>i!==idx)})} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.65rem",padding:0,touchAction:"manipulation"}}>✕</button>}
+                    </div>
+                    <StegeCell kg={s.two.kg} pp={s.two.pp} maxReps={2} onKg={v=>updateStege(idx,"two","kg",v)} onPP={v=>updateStege(idx,"two","pp",v)}/>
+                    <StegeCell kg={s.three.kg} pp={s.three.pp} maxReps={3} onKg={v=>updateStege(idx,"three","kg",v)} onPP={v=>updateStege(idx,"three","pp",v)}/>
+                    <StegeCell kg={s.five.kg} pp={s.five.pp} split={s.five.split} maxReps={5} showSplit onKg={v=>updateStege(idx,"five","kg",v)} onPP={v=>updateStege(idx,"five","pp",v)} onSplit={v=>updateStege(idx,"five","split",v)}/>
+                  </div>
+                ))}
+                <button onClick={()=>setForm({...form,steges:[...form.steges,emptyStege()]})} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.6rem",letterSpacing:"0.1em",fontFamily:"inherit",textTransform:"uppercase",touchAction:"manipulation"}}>+ Lägg till stege</button>
+              </div>
+            )}
+
+            {form.type==="ABC"&&(
+              <>
+                <Row label="Set @ 24 kg"><input type="number" placeholder="t.ex. 12" value={form.sets} onChange={e=>setForm({...form,sets:e.target.value})} style={{...IS,width:120,fontSize:"16px"}}/></Row>
+                <Row label="Sek / set"><input type="number" placeholder="t.ex. 88" value={form.secPerSet} onChange={e=>setForm({...form,secPerSet:e.target.value})} style={{...IS,width:120,fontSize:"16px"}}/></Row>
+                <Row label="Bonusset @ 20 kg (valfritt)"><input type="number" placeholder="0" value={form.bonusSets} onChange={e=>setForm({...form,bonusSets:e.target.value})} style={{...IS,width:80,fontSize:"16px"}}/></Row>
+                <Row label="Pauser">
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {form.pauses.map((p,i)=>(
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:"0.6rem",color:C.muted,whiteSpace:"nowrap"}}>Set kvar:</span>
+                        <input type="number" placeholder="19" value={p.setsLeft} onChange={e=>{const ps=form.pauses.map((x,j)=>j===i?{...x,setsLeft:e.target.value}:x);setForm({...form,pauses:ps});}} style={{...IS,width:64,fontSize:"16px"}}/>
+                        <span style={{fontSize:"0.6rem",color:C.muted,whiteSpace:"nowrap"}}>Vila (min):</span>
+                        <input type="number" placeholder="2" value={p.minutes} onChange={e=>{const ps=form.pauses.map((x,j)=>j===i?{...x,minutes:e.target.value}:x);setForm({...form,pauses:ps});}} style={{...IS,width:56,fontSize:"16px"}}/>
+                        <button onClick={()=>setForm({...form,pauses:form.pauses.filter((_,j)=>j!==i)})} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.7rem",padding:"0 4px",touchAction:"manipulation"}}>✕</button>
+                      </div>
+                    ))}
+                    <button onClick={()=>setForm({...form,pauses:[...form.pauses,{setsLeft:"",minutes:""}]})} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"7px",borderRadius:6,cursor:"pointer",fontSize:"0.6rem",letterSpacing:"0.1em",fontFamily:"inherit",textTransform:"uppercase",alignSelf:"flex-start",touchAction:"manipulation"}}>+ Lägg till paus</button>
+                  </div>
+                </Row>
+              </>
+            )}
+
+            {form.type==="Annat"&&(
+              <>
+                <Row label="Vad körde du?"><input type="text" placeholder="t.ex. Löpning, yoga, promenad..." value={form.otherTitle} onChange={e=>setForm({...form,otherTitle:e.target.value})} style={{...IS,fontSize:"16px"}}/></Row>
+                <Row label="Anteckningar (valfritt)"><textarea value={form.otherNotes} onChange={e=>setForm({...form,otherNotes:e.target.value})} placeholder="Hur gick det? Hur länge?" rows={3} style={{...IS,resize:"vertical",fontSize:"16px"}}/></Row>
+              </>
+            )}
+
+            <Row label="Känsla">
+              <div style={{display:"flex",gap:8}}>
+                {FEELINGS.map((f,i)=>(
+                  <button key={i} onClick={()=>setForm({...form,feeling:i})} style={{background:form.feeling===i?C.accentLight:C.bg,border:`1px solid ${form.feeling===i?C.accent:C.border}`,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:"1rem",opacity:form.feeling===i?1:0.35,touchAction:"manipulation"}} title={FEELING_LABELS[i]}>{f}</button>
+                ))}
+              </div>
+            </Row>
+
+            <Row label="Sömn"><Slider value={form.sleep} onChange={v=>setForm({...form,sleep:v})} labels={["Dålig","","Ok","","Bra"]} accent={C.accent}/></Row>
+            <Row label="Stress"><Slider value={form.stress} onChange={v=>setForm({...form,stress:v})} labels={["Låg","","Medel","","Hög"]} accent={C.orange}/></Row>
+
+            <Row label="Prehab">
+              <div style={{display:"flex",gap:10}}>
+                {[["prehabArms","💪 Armar"],["prehabKnees","🦵 Knän"]].map(([key,label])=>(
+                  <button key={key} onClick={()=>setForm({...form,[key]:!form[key]})} style={{background:form[key]?C.accentLight:C.bg,border:`2px solid ${form[key]?C.accent:C.border}`,color:form[key]?C.accent:C.muted,padding:"10px 18px",borderRadius:8,cursor:"pointer",fontSize:"0.8rem",fontFamily:"inherit",fontWeight:form[key]?700:400,display:"flex",alignItems:"center",gap:6,touchAction:"manipulation"}}>
+                    <span style={{width:16,height:16,borderRadius:3,background:form[key]?C.accent:C.surface,border:`2px solid ${form[key]?C.accent:C.border2}`,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      {form[key]&&<span style={{color:"#fff",fontSize:"0.65rem",lineHeight:1}}>✓</span>}
+                    </span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Row>
+
+            <Row label="Kropp — besvär eller notering"><textarea value={form.bodyLog} onChange={e=>setForm({...form,bodyLog:e.target.value})} placeholder="t.ex. revbenen ok, ingenting..." rows={2} style={{...IS,resize:"vertical",fontSize:"16px"}}/></Row>
+            <Row label="Anteckningar"><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Fritext..." rows={2} style={{...IS,resize:"vertical",fontSize:"16px"}}/></Row>
+
+            <button onClick={handleSubmit} style={{background:C.accent,border:"none",color:"#fff",padding:"13px 24px",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.85rem",letterSpacing:"0.04em",marginTop:4,touchAction:"manipulation"}}>
+              {saved?"✓ Sparat!":"Spara pass"}
+            </button>
+          </div>
+        )}
+
+        {/* ── HISTORIK ── */}
+        {view==="history"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {loading&&<p style={{color:C.muted,fontSize:"0.7rem"}}>Laddar...</p>}
+            {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.72rem"}}>Inga loggade pass ännu.</p>}
+            {logs.map(l=>{
+              const pp=totalPP(l);
+              return (
+                <div key={l.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <span style={typeBadge(l.type)}>{l.type}</span>
+                      <span style={{fontSize:"0.6rem",color:C.muted}}>{formatDate(l.date)}</span>
+                      <span style={{fontSize:"0.85rem"}}>{FEELINGS[l.feeling]}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {pp>0&&<span style={{fontSize:"0.6rem",color:C.orange,background:C.orangeBg,border:`1px solid ${C.orangeBorder}`,padding:"1px 6px",borderRadius:3}}>PP:{pp}</span>}
+                      {confirmId===l.id?(
+                        <div style={{display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontSize:"0.55rem",color:C.muted}}>Radera?</span>
+                          <button onClick={()=>{deleteLog(l.id);setConfirmId(null);}} style={{background:"#fff0f0",border:"1px solid #f0b8b8",color:C.red,padding:"2px 8px",borderRadius:3,cursor:"pointer",fontSize:"0.6rem",fontFamily:"inherit",touchAction:"manipulation"}}>Ja</button>
+                          <button onClick={()=>setConfirmId(null)} style={{background:C.bg,border:`1px solid ${C.border}`,color:C.muted,padding:"2px 8px",borderRadius:3,cursor:"pointer",fontSize:"0.6rem",fontFamily:"inherit",touchAction:"manipulation"}}>Nej</button>
+                        </div>
+                      ):(
+                        <button onClick={()=>setConfirmId(l.id)} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.7rem",padding:"2px 4px",touchAction:"manipulation"}}>✕</button>
+                      )}
+                    </div>
+                  </div>
+
+                  {l.type==="Press"&&l.steges&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                      <div style={{display:"grid",gridTemplateColumns:"22px 1fr 1fr 1fr",gap:4,marginBottom:2}}>
+                        <div/>
+                        {["2","3","5"].map(h=><div key={h} style={{fontSize:"0.48rem",letterSpacing:"0.08em",textTransform:"uppercase",color:C.faint,textAlign:"center"}}>{h} reps</div>)}
+                      </div>
+                      {l.steges.map((s,i)=>(
+                        <div key={i} style={{display:"grid",gridTemplateColumns:"22px 1fr 1fr 1fr",gap:4}}>
+                          <div style={{fontSize:"0.52rem",color:C.faint,display:"flex",alignItems:"center",justifyContent:"center"}}>{i+1}</div>
+                          {[{d:s.two,reps:2},{d:s.three,reps:3},{d:s.five,reps:5}].map(({d,reps})=>{
+                            if(!d) return <div key={reps}/>;
+                            const pp2=d.pp||0,clean=reps-pp2,split=d.split,isClean=pp2===0&&!split;
+                            return (
+                              <div key={reps} style={{background:isClean?C.abc:C.orangeBg,border:`1px solid ${isClean?C.abcBorder:C.orangeBorder}`,borderRadius:4,padding:"3px 6px",textAlign:"center"}}>
+                                {split?<span style={{fontSize:"0.52rem",color:C.pressText}}>{split}</span>:<span style={{fontSize:"0.58rem",color:isClean?C.abcText:C.orange}}>{isClean?`${reps}×${d.kg}✓`:`${clean}✓ +${pp2}PP`}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {l.type==="ABC"&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                      <div style={{display:"flex",gap:14}}>
+                        {l.sets&&<Stat label="Set @24kg" val={l.sets}/>}
+                        {l.secPerSet&&<Stat label="Sek/set" val={l.secPerSet}/>}
+                        {l.bonusSets&&Number(l.bonusSets)>0&&<Stat label="+bonus @20" val={l.bonusSets}/>}
+                        {l.pauses?.length>0&&<Stat label="Pauser" val={l.pauses.length}/>}
+                      </div>
+                      {l.pauses?.length>0&&(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                          {l.pauses.map((p,i)=><span key={i} style={{fontSize:"0.58rem",color:C.orange,background:C.orangeBg,border:`1px solid ${C.orangeBorder}`,padding:"2px 7px",borderRadius:3}}>{p.setsLeft} kvar → {p.minutes} min</span>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {l.type==="Annat"&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                      {l.otherTitle&&<p style={{fontSize:"0.68rem",color:C.otherText,fontWeight:600}}>{l.otherTitle}</p>}
+                      {l.otherNotes&&<p style={{fontSize:"0.63rem",color:C.muted,lineHeight:1.5}}>{l.otherNotes}</p>}
+                    </div>
+                  )}
+                  <div style={{display:"flex",gap:12,marginTop:8}}>
+                    <Stat label="Sömn" val={"★".repeat(l.sleep||1)}/>
+                    <Stat label="Stress" val={"▲".repeat(l.stress||1)}/>
+                  </div>
+                  {l.bodyLog&&<p style={{fontSize:"0.63rem",color:C.orange,marginTop:6,lineHeight:1.5}}>📝 {l.bodyLog}</p>}
+                  {(l.prehabArms||l.prehabKnees)&&(
+                    <div style={{display:"flex",gap:6,marginTop:6}}>
+                      {l.prehabArms&&<span style={{fontSize:"0.6rem",color:C.accent,background:C.accentLight,border:`1px solid ${C.accentMid}`,padding:"1px 8px",borderRadius:3}}>💪 Armar</span>}
+                      {l.prehabKnees&&<span style={{fontSize:"0.6rem",color:C.accent,background:C.accentLight,border:`1px solid ${C.accentMid}`,padding:"1px 8px",borderRadius:3}}>🦵 Knän</span>}
+                    </div>
+                  )}
+                  {l.notes&&<p style={{fontSize:"0.63rem",color:C.muted,marginTop:4,lineHeight:1.5}}>{l.notes}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── TREND ── */}
+        {view==="chart"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:20}}>
+            {abcLogs.length>1?<ChartBlock title="ABC — Set per pass" data={[...abcLogs].reverse().map(l=>({label:formatDate(l.date).slice(4),val:Number(l.sets)}))} color={C.abcText} max={30} target={23}/>:<Empty text="Logga minst 2 ABC-pass för att se trend"/>}
+            {abcLogs.length>1&&<ChartBlock title="ABC — Sek / set" data={[...abcLogs].reverse().map(l=>({label:formatDate(l.date).slice(4),val:Number(l.secPerSet)}))} color={C.accent} max={95} target={75}/>}
+            {pressLogs.length>1?<ChartBlock title="Press — Push press per pass" data={[...pressLogs].reverse().map(l=>({label:formatDate(l.date).slice(4),val:totalPP(l)}))} color={C.orange} max={20} target={0}/>:<Empty text="Logga minst 2 press-pass för att se PP-trend"/>}
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 16px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+              <div style={labelStyle}>Kroppslogg</div>
+              {logs.filter(l=>l.bodyLog).length===0?<p style={{fontSize:"0.63rem",color:C.faint,marginTop:8}}>Inga noteringar ännu</p>:logs.filter(l=>l.bodyLog).map(l=>(
+                <div key={l.id} style={{marginTop:10,paddingBottom:8,borderBottom:`1px solid ${C.border}`}}>
+                  <span style={{fontSize:"0.58rem",color:C.muted}}>{formatDate(l.date)} · {l.type}</span>
+                  <p style={{fontSize:"0.63rem",color:C.orange,marginTop:3,lineHeight:1.5}}>{l.bodyLog}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view==="settings"&&<SettingsView logs={logs} passIndex={passIndex} onImport={handleImport}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
