@@ -213,10 +213,10 @@ function Slider({value,onChange,labels,accent}) {
   return (
     <div>
       <input type="range" min={1} max={5} value={value} onChange={e=>onChange(Number(e.target.value))}
-        style={{width:"100%",accentColor:accent,cursor:"pointer",fontSize:"16px"}} />
-      <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+        style={{width:"100%",accentColor:accent,cursor:"pointer"}} />
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
         {labels.map((l,i)=>(
-          <span key={i} style={{fontSize:"0.58rem",color:value===i+1?accent:C.faint,letterSpacing:"0.06em"}}>{l}</span>
+          <span key={i} style={{fontSize:"0.6rem",color:value===i+1?accent:C.faint,letterSpacing:"0.08em",fontWeight:value===i+1?600:400}}>{l}</span>
         ))}
       </div>
     </div>
@@ -263,7 +263,7 @@ function StegeCell({kg,pp,split,onKg,onPP,onSplit,maxReps,showSplit}) {
       {showSplit && (
         <input placeholder="delad? 3×24+2×20" value={split||""}
           onChange={e=>{onSplit(e.target.value);if(e.target.value)onPP(0);}}
-          style={{...IS,fontSize:"16px",padding:"4px 6px"}} />
+          style={{...IS,padding:"4px 6px"}} />
       )}
     </div>
   );
@@ -628,7 +628,9 @@ function SettingsView({logs,passIndex,onImport}) {
 
 // ── HISTORY LOG CARD ──
 function LogCard({l, confirmId, setConfirmId, deleteLog}) {
+  if (!l) return null;
   const pp=totalPP(l);
+  const feeling = l.feeling ?? 2;
   const cardStyle={background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"13px 15px",boxShadow:`0 1px 3px ${C.shadow}`};
   return (
     <div style={cardStyle}>
@@ -636,7 +638,7 @@ function LogCard({l, confirmId, setConfirmId, deleteLog}) {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <span style={typeBadge(l.type)}>{l.type}</span>
           <span style={{fontSize:"0.65rem",color:C.muted}}>{formatDate(l.date)}</span>
-          <span style={{fontSize:"0.9rem"}}>{FEELINGS[l.feeling]}</span>
+          <span style={{fontSize:"0.9rem"}}>{FEELINGS[feeling]}</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           {pp>0&&<span style={{fontSize:"0.65rem",color:C.orange,background:C.orangeBg,border:`1px solid ${C.orangeBorder}`,padding:"2px 7px",borderRadius:4}}>PP:{pp}</span>}
@@ -724,8 +726,8 @@ function LogCard({l, confirmId, setConfirmId, deleteLog}) {
         </div>
       )}
       <div style={{display:"flex",gap:14,marginTop:8}}>
-        <Stat label="Sömn" val={"★".repeat(l.sleep||1)}/>
-        <Stat label="Stress" val={"▲".repeat(l.stress||1)}/>
+        <Stat label="Sömn" val={"★".repeat(l.sleep||2)}/>
+        <Stat label="Stress" val={"▲".repeat(l.stress||2)}/>
       </div>
       {l.bodyLog&&<p style={{fontSize:"0.68rem",color:C.orange,marginTop:6,lineHeight:1.5}}>📝 {l.bodyLog}</p>}
       {(l.prehabArms||l.prehabKnees)&&(
@@ -765,12 +767,95 @@ function LogCardCompact({l, confirmId, setConfirmId, deleteLog}) {
   );
 }
 
+// ── WW FORM COMPONENT ──
+const WW_STEPS = ["5+5","4+4","3+3","2+2","1+1"];
+
+function WWForm({form, setForm}) {
+  function toggleStep(roundIdx, step) {
+    const current = (form.wwRounds[roundIdx] || []);
+    const next = current.includes(step)
+      ? current.filter(s=>s!==step)
+      : [...current, step];
+    const newRounds = form.wwRounds.map((r,i)=>i===roundIdx?next:r);
+    setForm({...form, wwRounds: newRounds});
+  }
+  function addRound() {
+    setForm({...form, wwRounds:[...form.wwRounds,[]]});
+  }
+  function removeRound(i) {
+    setForm({...form, wwRounds:form.wwRounds.filter((_,j)=>j!==i)});
+  }
+
+  return (
+    <>
+      <div style={{background:C.ww,border:`1px solid ${C.wwBorder}`,borderRadius:8,padding:"10px 12px",fontSize:"0.72rem",color:C.wwText,lineHeight:1.7}}>
+        <strong>WW-struktur:</strong> 5+5 → 4+4 → 3+3 → 2+2 → 1+1 cleans+squats. Upp till 5 ronder.
+      </div>
+      <Row label="Vikt (kg)">
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {["12","16","20","24"].map(w=>(
+            <button key={w} onClick={()=>setForm({...form,wwKg:w})} style={{
+              background:form.wwKg===w?C.accentLight:C.bg,
+              border:`2px solid ${form.wwKg===w?C.accent:C.border2}`,
+              color:form.wwKg===w?C.accent:C.muted,
+              padding:"7px 18px",borderRadius:6,cursor:"pointer",
+              fontSize:"0.85rem",fontWeight:form.wwKg===w?700:500,touchAction:"manipulation",
+            }}>{w} kg</button>
+          ))}
+        </div>
+      </Row>
+      <Row label="Ronder">
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {form.wwRounds.map((round,ri)=>(
+            <div key={ri} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <span style={{fontSize:"0.72rem",color:C.muted,fontWeight:600}}>Rond {ri+1}</span>
+                {form.wwRounds.length>1&&(
+                  <button onClick={()=>removeRound(ri)} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.8rem",touchAction:"manipulation"}}>✕</button>
+                )}
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {WW_STEPS.map(step=>{
+                  const done=round.includes(step);
+                  return (
+                    <button key={step} onClick={()=>toggleStep(ri,step)} style={{
+                      background:done?C.accentLight:C.bg,
+                      border:`2px solid ${done?C.accent:C.border2}`,
+                      color:done?C.accent:C.muted,
+                      padding:"6px 12px",borderRadius:6,cursor:"pointer",
+                      fontSize:"0.78rem",fontWeight:done?700:500,touchAction:"manipulation",
+                      display:"flex",alignItems:"center",gap:4,
+                    }}>
+                      {done&&<span style={{fontSize:"0.6rem"}}>✓</span>}
+                      {step}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{marginTop:6,fontSize:"0.65rem",color:round.length===5?C.accent:C.faint}}>
+                {round.length===5?"✓ Komplett rond":`${round.length}/5 steg`}
+              </div>
+            </div>
+          ))}
+          {form.wwRounds.length<5&&(
+            <button onClick={addRound} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",touchAction:"manipulation"}}>
+              + Lägg till rond
+            </button>
+          )}
+        </div>
+      </Row>
+      <Row label="Anteckningar (valfritt)">
+        <textarea value={form.wwNotes||""} onChange={e=>setForm({...form,wwNotes:e.target.value})} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
+      </Row>
+    </>
+  );
+}
+
 function App() {
   const [logs,setLogs]=useState([]);
   const [form,setForm]=useState(emptyForm);
   const [view,setView]=useState("home");
   const [saved,setSaved]=useState(false);
-  const [draftSaved,setDraftSaved]=useState(false);
   const [loading,setLoading]=useState(true);
   const [dbError,setDbError]=useState(null);
   const [confirmId,setConfirmId]=useState(null);
@@ -792,7 +877,15 @@ function App() {
         setLogs(fetchedLogs);
         if (idxVal !== null) setPassIndex(Number(idxVal));
         if (draftVal) { try { setForm(JSON.parse(draftVal)); } catch(e) {} }
-        if (outcomesVal) { try { setPassOutcomes(JSON.parse(outcomesVal)); } catch(e) {} }
+        if (outcomesVal) {
+          try {
+            const raw = JSON.parse(outcomesVal);
+            // Keys from JSON are strings, convert back to numbers
+            const fixed = {};
+            Object.entries(raw).forEach(([k,v]) => { fixed[Number(k)] = v; });
+            setPassOutcomes(fixed);
+          } catch(e) {}
+        }
       } catch(e) {
         setDbError("Kunde inte ansluta till databasen.");
       }
@@ -805,12 +898,8 @@ function App() {
     if (loading) return;
     clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(async () => {
-      try {
-        await dbSaveState(DRAFT_KEY, JSON.stringify(form));
-        setDraftSaved(true);
-        setTimeout(() => setDraftSaved(false), 1500);
-      } catch(e) {}
-    }, 2000);
+      try { await dbSaveState(DRAFT_KEY, JSON.stringify(form)); } catch(e) {}
+    }, 10000); // 10 seconds - generous debounce, app open 40 min 3x/week
     return () => clearTimeout(draftTimerRef.current);
   }, [form]);
 
@@ -1139,18 +1228,14 @@ function App() {
         {/* ── LOGGA ── */}
         {view==="log"&&(
           <div style={{display:"flex",flexDirection:"column",gap:18,maxWidth:680}}>
-            <TimerView/>
-            <div style={{fontSize:"0.6rem",color:draftSaved?C.accentMid:C.faint}}>
-              {draftSaved?"✓ Utkast sparat":"Autosparar utkast..."}
-            </div>
             <Row label="Datum">
-              <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={{...IS,fontSize:"16px"}}/>
+              <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} style={IS}/>
             </Row>
             <Row label="Passtyp">
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {["Press","ABC","WW","Annat"].map(t=>{
                   const col=passColor(t),sel=form.type===t;
-                  return <button key={t} onClick={()=>setForm({...form,type:t})} style={{background:sel?col.bg:C.bg,border:`2px solid ${sel?col.border:C.border2}`,color:sel?col.text:C.navText,padding:"8px 22px",borderRadius:7,cursor:"pointer",fontSize:"0.8rem",letterSpacing:"0.04em",fontFamily:"inherit",fontWeight:sel?700:500,touchAction:"manipulation"}}>{t}</button>;
+                  return <button key={t} onClick={()=>setForm({...form,type:t,wwRounds:t==="WW"&&form.wwRounds.length===0?[[]]:form.wwRounds})} style={{background:sel?col.bg:C.bg,border:`2px solid ${sel?col.border:C.border2}`,color:sel?col.text:C.navText,padding:"8px 22px",borderRadius:7,cursor:"pointer",fontSize:"0.8rem",letterSpacing:"0.04em",fontFamily:"inherit",fontWeight:sel?700:500,touchAction:"manipulation"}}>{t}</button>;
                 })}
               </div>
             </Row>
@@ -1179,17 +1264,17 @@ function App() {
 
             {form.type==="ABC"&&(
               <>
-                <Row label="Set @ 24 kg"><input type="number" placeholder="t.ex. 12" value={form.sets} onChange={e=>setForm({...form,sets:e.target.value})} style={{...IS,width:140,fontSize:"16px"}}/></Row>
-                <Row label="Sek / set"><input type="number" placeholder="t.ex. 88" value={form.secPerSet} onChange={e=>setForm({...form,secPerSet:e.target.value})} style={{...IS,width:140,fontSize:"16px"}}/></Row>
-                <Row label="Bonusset @ 20 kg (valfritt)"><input type="number" placeholder="0" value={form.bonusSets} onChange={e=>setForm({...form,bonusSets:e.target.value})} style={{...IS,width:90,fontSize:"16px"}}/></Row>
+                <Row label="Set @ 24 kg"><input type="number" placeholder="t.ex. 12" value={form.sets} onChange={e=>setForm({...form,sets:e.target.value})} style={{...IS,width:140}}/></Row>
+                <Row label="Sek / set"><input type="number" placeholder="t.ex. 88" value={form.secPerSet} onChange={e=>setForm({...form,secPerSet:e.target.value})} style={{...IS,width:140}}/></Row>
+                <Row label="Bonusset @ 20 kg (valfritt)"><input type="number" placeholder="0" value={form.bonusSets} onChange={e=>setForm({...form,bonusSets:e.target.value})} style={{...IS,width:90}}/></Row>
                 <Row label="Pauser">
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
                     {form.pauses.map((p,i)=>(
                       <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
                         <span style={{fontSize:"0.65rem",color:C.muted,whiteSpace:"nowrap"}}>Set kvar:</span>
-                        <input type="number" placeholder="19" value={p.setsLeft} onChange={e=>{const ps=form.pauses.map((x,j)=>j===i?{...x,setsLeft:e.target.value}:x);setForm({...form,pauses:ps});}} style={{...IS,width:70,fontSize:"16px"}}/>
+                        <input type="number" placeholder="19" value={p.setsLeft} onChange={e=>{const ps=form.pauses.map((x,j)=>j===i?{...x,setsLeft:e.target.value}:x);setForm({...form,pauses:ps});}} style={{...IS,width:70}}/>
                         <span style={{fontSize:"0.65rem",color:C.muted,whiteSpace:"nowrap"}}>Vila (min):</span>
-                        <input type="number" placeholder="2" value={p.minutes} onChange={e=>{const ps=form.pauses.map((x,j)=>j===i?{...x,minutes:e.target.value}:x);setForm({...form,pauses:ps});}} style={{...IS,width:60,fontSize:"16px"}}/>
+                        <input type="number" placeholder="2" value={p.minutes} onChange={e=>{const ps=form.pauses.map((x,j)=>j===i?{...x,minutes:e.target.value}:x);setForm({...form,pauses:ps});}} style={{...IS,width:60}}/>
                         <button onClick={()=>setForm({...form,pauses:form.pauses.filter((_,j)=>j!==i)})} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.8rem",padding:"0 4px",touchAction:"manipulation"}}>✕</button>
                       </div>
                     ))}
@@ -1206,88 +1291,9 @@ function App() {
               </>
             )}
 
-            {form.type==="WW"&&(()=>{
-              // WW = 5 rounds of descending ladders: 5/5, 4/4, 3/3, 2/2, 1/1 cleans+squats
-              const WW_STEPS = ["5+5","4+4","3+3","2+2","1+1"];
-              const rounds = form.wwRounds.length > 0 ? form.wwRounds : [[]];
-              function toggleStep(roundIdx, step) {
-                const current = form.wwRounds[roundIdx] || [];
-                const next = current.includes(step)
-                  ? current.filter(s=>s!==step)
-                  : [...current, step];
-                const newRounds = form.wwRounds.map((r,i)=>i===roundIdx?next:r);
-                setForm({...form, wwRounds: newRounds});
-              }
-              function addRound() {
-                setForm({...form, wwRounds:[...form.wwRounds,[]]});
-              }
-              function removeRound(i) {
-                setForm({...form, wwRounds:form.wwRounds.filter((_,j)=>j!==i)});
-              }
-              return (
-                <>
-                  <div style={{background:C.ww,border:`1px solid ${C.wwBorder}`,borderRadius:8,padding:"10px 12px",fontSize:"0.72rem",color:C.wwText,lineHeight:1.7}}>
-                    <strong>WW-struktur:</strong> 5+5 → 4+4 → 3+3 → 2+2 → 1+1 (cleans+squats). Upp till 5 ronder.
-                  </div>
-                  <Row label="Vikt (kg)">
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {["12","16","20","24"].map(w=>(
-                        <button key={w} onClick={()=>setForm({...form,wwKg:w})} style={{
-                          background:form.wwKg===w?C.accentLight:C.bg,
-                          border:`2px solid ${form.wwKg===w?C.accent:C.border2}`,
-                          color:form.wwKg===w?C.accent:C.muted,
-                          padding:"7px 18px",borderRadius:6,cursor:"pointer",
-                          fontSize:"0.85rem",fontWeight:form.wwKg===w?700:500,touchAction:"manipulation",
-                        }}>{w} kg</button>
-                      ))}
-                    </div>
-                  </Row>
-                  <Row label="Ronder — markera genomförda steg">
-                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                      {form.wwRounds.map((round,ri)=>(
-                        <div key={ri} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                            <span style={{fontSize:"0.72rem",color:C.muted,fontWeight:600}}>Rond {ri+1}</span>
-                            {form.wwRounds.length>1&&(
-                              <button onClick={()=>removeRound(ri)} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.8rem",touchAction:"manipulation"}}>✕</button>
-                            )}
-                          </div>
-                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                            {WW_STEPS.map(step=>{
-                              const done=round.includes(step);
-                              return (
-                                <button key={step} onClick={()=>toggleStep(ri,step)} style={{
-                                  background:done?C.accentLight:C.bg,
-                                  border:`2px solid ${done?C.accent:C.border2}`,
-                                  color:done?C.accent:C.muted,
-                                  padding:"6px 12px",borderRadius:6,cursor:"pointer",
-                                  fontSize:"0.78rem",fontWeight:done?700:500,touchAction:"manipulation",
-                                  display:"flex",alignItems:"center",gap:4,
-                                }}>
-                                  {done&&<span style={{fontSize:"0.6rem"}}>✓</span>}
-                                  {step}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <div style={{marginTop:6,fontSize:"0.65rem",color:round.length===5?C.accent:C.faint}}>
-                            {round.length===5?"✓ Komplett rond":`${round.length}/5 steg`}
-                          </div>
-                        </div>
-                      ))}
-                      {form.wwRounds.length<5&&(
-                        <button onClick={addRound} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",touchAction:"manipulation"}}>
-                          + Lägg till rond
-                        </button>
-                      )}
-                    </div>
-                  </Row>
-                  <Row label="Anteckningar (valfritt)">
-                    <textarea value={form.wwNotes} onChange={e=>setForm({...form,wwNotes:e.target.value})} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
-                  </Row>
-                </>
-              );
-            })()}
+            {form.type==="WW"&&(
+              <WWForm form={form} setForm={setForm} C={C} IS={IS} />
+            )}
 
             <Row label="Känsla">
               <div style={{display:"flex",gap:8}}>
@@ -1327,36 +1333,31 @@ function App() {
             <div className="history-card-mobile">
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
               {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
-              {logs.map(l=>(
-                <LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>
-              ))}
+              {logs.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
             </div>
-
-              {/* Desktop week grid */}
-              <div className="history-card-desktop">
-                {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
-                {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
-                {WEEK_SCHEDULE.map((week,wi)=>{
-                  const weekPasses = week.passes.filter(Boolean);
-                  const hasAny = weekPasses.some(p => logs.find(l=>l.date===p.date));
-                  if (!hasAny) return null;
-                  return (
-                    <div key={wi} className="history-week-row">
-                      <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
-                        <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
-                        <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
-                      </div>
-                      {[0,1,2].map(pi=>{
-                        const p = week.passes[pi];
-                        if (!p) return <div key={pi} style={{visibility:"hidden"}}/>;
-                        const logged = logs.find(l=>l.date===p.date);
-                        return <LogCardCompact key={pi} l={logged||null} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
-                      })}
+            <div className="history-card-desktop">
+              {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
+              {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
+              {WEEK_SCHEDULE.map((week,wi)=>{
+                const hasAny = week.passes.filter(Boolean).some(p=>logs.find(l=>l.date===p.date));
+                if (!hasAny) return null;
+                return (
+                  <div key={wi} className="history-week-row">
+                    <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
+                      <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
+                      <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
                     </div>
-                  );
-                })}
-              </div>
+                    {[0,1,2].map(pi=>{
+                      const p=week.passes[pi];
+                      if(!p) return <div key={pi} style={{visibility:"hidden"}}/>;
+                      const logged=logs.find(l=>l.date===p.date);
+                      return <LogCardCompact key={pi} l={logged||null} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
+                    })}
+                  </div>
+                );
+              })}
             </div>
+          </div>
         )}
 
         {/* ── TREND ── */}
