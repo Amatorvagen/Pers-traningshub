@@ -14,26 +14,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f2f4f0; -webkit-text-size-adjust: 100%; }
-  input, textarea, select, button { font-size: 16px !important; }
-  input[type="range"] { font-size: 16px !important; }
-  /* Desktop history grid */
+  body { background: #F0E8DE; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+  input:focus, textarea:focus, select:focus { font-size: 16px !important; }
+  .history-card-mobile { display: flex; flex-direction: column; gap: 8px; }
+  .history-card-desktop { display: none; flex-direction: column; gap: 6px; }
   @media (min-width: 700px) {
-    .history-week-row {
-      display: grid !important;
-      grid-template-columns: 52px 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .history-week-label { display: flex !important; flex-direction: column; justify-content: flex-start; padding-top: 6px; }
-    .history-card-mobile { display: none !important; }
-    .history-card-desktop { display: flex !important; }
-  }
-  @media (max-width: 699px) {
-    .history-week-row { display: block !important; }
-    .history-week-label { display: none !important; }
-    .history-card-desktop { display: none !important; }
-    .history-card-mobile { display: block !important; }
+    .history-card-mobile { display: none; }
+    .history-card-desktop { display: flex; }
+    .history-week-row { display: grid; grid-template-columns: 52px 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; align-items: start; }
   }
 </style>
 </head>
@@ -69,16 +57,17 @@ const QUOTES = [
 ];
 
 const C = {
-  bg:"#f2f4f0",surface:"#ffffff",surfaceAlt:"#f7f8f5",
-  border:"#dde0d8",border2:"#c8ccc2",text:"#2c3028",muted:"#5a5a52",faint:"#8a9080",
-  accent:"#3d6b45",accentLight:"#e8f0e9",accentMid:"#6a9e72",
-  press:"#e8eef5",pressBorder:"#a8c4e0",pressText:"#1e4870",
-  abc:"#f5ede0",abcBorder:"#c8a870",abcText:"#5a3a08",
-  other:"#f0ecf8",otherBorder:"#b8a8d8",otherText:"#3a1a68",
-  orange:"#a06020",orangeBg:"#fdf3ec",orangeBorder:"#e8c8a8",
-  red:"#b84040",shadow:"rgba(44,48,40,0.07)",
-  missedBg:"#f0ede8",missedBorder:"#c8bfb0",missedText:"#7a7068",
-  navText:"#4a4a42",navActive:"#3d6b45",
+  bg:"#F0E8DE",surface:"#FDF5EE",surfaceAlt:"#F8EFE4",
+  border:"#E5D4C0",border2:"#D4BFA8",text:"#3A2010",muted:"#7A6A50",faint:"#A89878",
+  accent:"#C47C4C",accentLight:"#FFECD8",accentMid:"#D4946A",
+  press:"#E4F0F8",pressBorder:"#BADFE9",pressText:"#3A6878",
+  abc:"#FFF0E4",abcBorder:"#E8C8A8",abcText:"#7A3A10",
+  other:"#F0ECF8",otherBorder:"#C8B8D8",otherText:"#3A1A68",
+  ww:"#E8F4E8",wwBorder:"#A8D4A8",wwText:"#1A5A1A",
+  orange:"#A06020",orangeBg:"#FDF3EC",orangeBorder:"#E8C8A8",
+  red:"#B84040",shadow:"rgba(58,32,16,0.08)",
+  missedBg:"#EDE8E0",missedBorder:"#C8BFB0",missedText:"#7A7060",
+  navText:"#5A4A30",navActive:"#C47C4C",
 };
 
 const WEEK_SCHEDULE = [
@@ -135,6 +124,7 @@ function passColor(type) {
   if (type==="Övergång") return {bg:C.surfaceAlt,border:C.border,text:C.muted};
   if (type==="Press")   return {bg:C.press,border:C.pressBorder,text:C.pressText};
   if (type==="ABC")     return {bg:C.abc,border:C.abcBorder,text:C.abcText};
+  if (type==="WW")      return {bg:C.ww,border:C.wwBorder,text:C.wwText};
   if (type==="Annat")   return {bg:C.other,border:C.otherBorder,text:C.otherText};
   return {bg:C.surface,border:C.border,text:C.text};
 }
@@ -153,6 +143,7 @@ const emptyForm = {
   date:todayStr(),type:"Press",steges:[emptyStege()],
   sets:"",secPerSet:"",bonusSets:"",pauses:[],
   otherTitle:"",otherNotes:"",
+  wwKg:"16",wwRounds:[],wwNotes:"",
   feeling:2,sleep:2,stress:2,
   prehabArms:false,prehabKnees:false,
   bodyLog:"",notes:"",
@@ -193,7 +184,7 @@ const DRAFT_KEY = "form-draft";
 const IS = {
   background:C.surface,border:`1px solid ${C.border}`,color:C.text,
   padding:"8px 10px",borderRadius:6,
-  fontFamily:"'DM Mono',monospace",fontSize:"16px",
+  fontFamily:"'DM Mono',monospace",fontSize:"0.85rem",
   width:"100%",outline:"none",
   WebkitAppearance:"none",touchAction:"manipulation",
 };
@@ -697,6 +688,35 @@ function LogCard({l, confirmId, setConfirmId, deleteLog}) {
           )}
         </div>
       )}
+      {l.type==="WW"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <Stat label="Vikt" val={`${l.wwKg||"?"} kg`}/>
+            <Stat label="Ronder" val={`${l.wwRounds?.length||0}/5`}/>
+            <Stat label="Kompletta" val={`${l.wwRounds?.filter(r=>r.length===5).length||0}`}/>
+          </div>
+          {l.wwRounds?.length>0&&(
+            <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:4}}>
+              {l.wwRounds.map((round,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:"0.62rem",color:C.muted,minWidth:52}}>Rond {i+1}:</span>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                    {["5+5","4+4","3+3","2+2","1+1"].map(step=>(
+                      <span key={step} style={{
+                        fontSize:"0.6rem",padding:"1px 6px",borderRadius:3,
+                        background:round.includes(step)?C.accentLight:C.bg,
+                        color:round.includes(step)?C.accent:C.faint,
+                        border:`1px solid ${round.includes(step)?C.accentMid:C.border}`,
+                      }}>{step}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {l.wwNotes&&<p style={{fontSize:"0.68rem",color:C.muted,marginTop:2,lineHeight:1.5}}>{l.wwNotes}</p>}
+        </div>
+      )}
       {l.type==="Annat"&&(
         <div style={{display:"flex",flexDirection:"column",gap:4}}>
           {l.otherTitle&&<p style={{fontSize:"0.72rem",color:C.otherText,fontWeight:600}}>{l.otherTitle}</p>}
@@ -736,6 +756,7 @@ function LogCardCompact({l, confirmId, setConfirmId, deleteLog}) {
       <div style={{fontSize:"0.58rem",color:C.muted}}>{formatDate(l.date).slice(4)}</div>
       {l.type==="ABC"&&l.sets&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.sets} set · {l.secPerSet}s</div>}
       {l.type==="Press"&&l.steges&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.steges.length} st · {totalPP(l)===0?"rent":""+totalPP(l)+"PP"}</div>}
+      {l.type==="WW"&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.wwKg||"?"}kg · {l.wwRounds?.length||0} ronder</div>}
       {l.type==="Annat"&&l.otherTitle&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.otherTitle.slice(0,18)}</div>}
       {(l.prehabArms||l.prehabKnees)&&(
         <div style={{fontSize:"0.55rem",color:C.accent}}>{[l.prehabArms&&"💪",l.prehabKnees&&"🦵"].filter(Boolean).join(" ")}</div>
@@ -917,8 +938,20 @@ function App() {
         {/* ── HEM ── */}
         {view==="home"&&(()=>{
           const last=logs[0];
+          const wwLogs=logs.filter(l=>l.type==="WW");
           return (
             <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:680}}>
+              {/* Stats */}
+              {logs.length>0&&(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+                  {[["Pass",logs.length],["Press",pressLogs.length],["ABC",abcLogs.length],["WW",wwLogs.length]].map(([label,val])=>(
+                    <div key={label} style={{background:C.surface,border:`1px solid ${C.border}`,padding:"9px 10px",borderRadius:8,boxShadow:`0 1px 2px ${C.shadow}`}}>
+                      <div style={{fontSize:"0.52rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,marginBottom:2}}>{label}</div>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontSize:"1.2rem",fontWeight:700,color:C.accent}}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={cardStyle}>
                 <div style={labelStyle}>Årsplan 2026</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
@@ -991,6 +1024,7 @@ function App() {
                     </div>
                     {last.type==="Press"&&last.steges&&<p style={{fontSize:"0.68rem",color:C.muted}}>{last.steges.length} stegar · {totalPP(last)===0?"Inga push press 💪":`${totalPP(last)} push press`}</p>}
                     {last.type==="ABC"&&<p style={{fontSize:"0.68rem",color:C.muted}}>{last.sets} set @ {last.secPerSet} sek{last.pauses?.length>0?` · ${last.pauses.length} pauser`:""}{last.bonusSets&&Number(last.bonusSets)>0?` · +${last.bonusSets} bonus`:""}</p>}
+                    {last.type==="WW"&&<p style={{fontSize:"0.68rem",color:C.muted}}>{last.wwRounds?.length||0} ronder · {last.wwKg||"?"}kg{last.wwRounds?.filter(r=>r.length===5).length>0?` · ${last.wwRounds.filter(r=>r.length===5).length} kompletta`:""}</p>}
                     {last.type==="Annat"&&<p style={{fontSize:"0.68rem",color:C.muted}}>{last.otherTitle||"Övrigt pass"}</p>}
                   </div>
                 ):(
@@ -1114,7 +1148,7 @@ function App() {
             </Row>
             <Row label="Passtyp">
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {["Press","ABC","Annat"].map(t=>{
+                {["Press","ABC","WW","Annat"].map(t=>{
                   const col=passColor(t),sel=form.type===t;
                   return <button key={t} onClick={()=>setForm({...form,type:t})} style={{background:sel?col.bg:C.bg,border:`2px solid ${sel?col.border:C.border2}`,color:sel?col.text:C.navText,padding:"8px 22px",borderRadius:7,cursor:"pointer",fontSize:"0.8rem",letterSpacing:"0.04em",fontFamily:"inherit",fontWeight:sel?700:500,touchAction:"manipulation"}}>{t}</button>;
                 })}
@@ -1167,10 +1201,93 @@ function App() {
 
             {form.type==="Annat"&&(
               <>
-                <Row label="Vad körde du?"><input type="text" placeholder="t.ex. Löpning, yoga, promenad..." value={form.otherTitle} onChange={e=>setForm({...form,otherTitle:e.target.value})} style={{...IS,fontSize:"16px"}}/></Row>
-                <Row label="Anteckningar (valfritt)"><textarea value={form.otherNotes} onChange={e=>setForm({...form,otherNotes:e.target.value})} placeholder="Hur gick det? Hur länge?" rows={3} style={{...IS,resize:"vertical",fontSize:"16px"}}/></Row>
+                <Row label="Vad körde du?"><input type="text" placeholder="t.ex. Löpning, yoga, promenad..." value={form.otherTitle} onChange={e=>setForm({...form,otherTitle:e.target.value})} style={IS}/></Row>
+                <Row label="Anteckningar (valfritt)"><textarea value={form.otherNotes} onChange={e=>setForm({...form,otherNotes:e.target.value})} placeholder="Hur gick det? Hur länge?" rows={3} style={{...IS,resize:"vertical"}}/></Row>
               </>
             )}
+
+            {form.type==="WW"&&(()=>{
+              // WW = 5 rounds of descending ladders: 5/5, 4/4, 3/3, 2/2, 1/1 cleans+squats
+              const WW_STEPS = ["5+5","4+4","3+3","2+2","1+1"];
+              const rounds = form.wwRounds.length > 0 ? form.wwRounds : [[]];
+              function toggleStep(roundIdx, step) {
+                const current = form.wwRounds[roundIdx] || [];
+                const next = current.includes(step)
+                  ? current.filter(s=>s!==step)
+                  : [...current, step];
+                const newRounds = form.wwRounds.map((r,i)=>i===roundIdx?next:r);
+                setForm({...form, wwRounds: newRounds});
+              }
+              function addRound() {
+                setForm({...form, wwRounds:[...form.wwRounds,[]]});
+              }
+              function removeRound(i) {
+                setForm({...form, wwRounds:form.wwRounds.filter((_,j)=>j!==i)});
+              }
+              return (
+                <>
+                  <div style={{background:C.ww,border:`1px solid ${C.wwBorder}`,borderRadius:8,padding:"10px 12px",fontSize:"0.72rem",color:C.wwText,lineHeight:1.7}}>
+                    <strong>WW-struktur:</strong> 5+5 → 4+4 → 3+3 → 2+2 → 1+1 (cleans+squats). Upp till 5 ronder.
+                  </div>
+                  <Row label="Vikt (kg)">
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {["12","16","20","24"].map(w=>(
+                        <button key={w} onClick={()=>setForm({...form,wwKg:w})} style={{
+                          background:form.wwKg===w?C.accentLight:C.bg,
+                          border:`2px solid ${form.wwKg===w?C.accent:C.border2}`,
+                          color:form.wwKg===w?C.accent:C.muted,
+                          padding:"7px 18px",borderRadius:6,cursor:"pointer",
+                          fontSize:"0.85rem",fontWeight:form.wwKg===w?700:500,touchAction:"manipulation",
+                        }}>{w} kg</button>
+                      ))}
+                    </div>
+                  </Row>
+                  <Row label="Ronder — markera genomförda steg">
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {form.wwRounds.map((round,ri)=>(
+                        <div key={ri} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                            <span style={{fontSize:"0.72rem",color:C.muted,fontWeight:600}}>Rond {ri+1}</span>
+                            {form.wwRounds.length>1&&(
+                              <button onClick={()=>removeRound(ri)} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.8rem",touchAction:"manipulation"}}>✕</button>
+                            )}
+                          </div>
+                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                            {WW_STEPS.map(step=>{
+                              const done=round.includes(step);
+                              return (
+                                <button key={step} onClick={()=>toggleStep(ri,step)} style={{
+                                  background:done?C.accentLight:C.bg,
+                                  border:`2px solid ${done?C.accent:C.border2}`,
+                                  color:done?C.accent:C.muted,
+                                  padding:"6px 12px",borderRadius:6,cursor:"pointer",
+                                  fontSize:"0.78rem",fontWeight:done?700:500,touchAction:"manipulation",
+                                  display:"flex",alignItems:"center",gap:4,
+                                }}>
+                                  {done&&<span style={{fontSize:"0.6rem"}}>✓</span>}
+                                  {step}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div style={{marginTop:6,fontSize:"0.65rem",color:round.length===5?C.accent:C.faint}}>
+                            {round.length===5?"✓ Komplett rond":`${round.length}/5 steg`}
+                          </div>
+                        </div>
+                      ))}
+                      {form.wwRounds.length<5&&(
+                        <button onClick={addRound} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",touchAction:"manipulation"}}>
+                          + Lägg till rond
+                        </button>
+                      )}
+                    </div>
+                  </Row>
+                  <Row label="Anteckningar (valfritt)">
+                    <textarea value={form.wwNotes} onChange={e=>setForm({...form,wwNotes:e.target.value})} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
+                  </Row>
+                </>
+              );
+            })()}
 
             <Row label="Känsla">
               <div style={{display:"flex",gap:8}}>
@@ -1195,8 +1312,8 @@ function App() {
               </div>
             </Row>
 
-            <Row label="Kropp — besvär eller notering"><textarea value={form.bodyLog} onChange={e=>setForm({...form,bodyLog:e.target.value})} placeholder="t.ex. revbenen ok, ingenting..." rows={2} style={{...IS,resize:"vertical",fontSize:"16px"}}/></Row>
-            <Row label="Anteckningar"><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Fritext..." rows={2} style={{...IS,resize:"vertical",fontSize:"16px"}}/></Row>
+            <Row label="Kropp — besvär eller notering"><textarea value={form.bodyLog} onChange={e=>setForm({...form,bodyLog:e.target.value})} placeholder="t.ex. revbenen ok, ingenting..." rows={2} style={{...IS,resize:"vertical"}}/></Row>
+            <Row label="Anteckningar"><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Fritext..." rows={2} style={{...IS,resize:"vertical"}}/></Row>
 
             <button onClick={handleSubmit} style={{background:C.accent,border:"none",color:"#fff",padding:"14px 28px",borderRadius:9,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"1rem",letterSpacing:"0.04em",marginTop:4,touchAction:"manipulation"}}>
               {saved?"✓ Sparat!":"Spara pass"}
@@ -1205,32 +1322,27 @@ function App() {
         )}
 
         {/* ── HISTORIK ── */}
-        {view==="history"&&(()=>{
-          // Mobile: flat list sorted by date
-          // Desktop: week grid matching WEEK_SCHEDULE
-          return (
-            <div>
-              {/* Mobile list */}
-              <div className="history-card-mobile" style={{display:"flex",flexDirection:"column",gap:8}}>
-                {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
-                {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
-                {logs.map(l=>(
-                  <LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>
-                ))}
-              </div>
+        {view==="history"&&(
+          <div>
+            <div className="history-card-mobile">
+              {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
+              {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
+              {logs.map(l=>(
+                <LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>
+              ))}
+            </div>
 
               {/* Desktop week grid */}
-              <div className="history-card-desktop" style={{display:"none",flexDirection:"column",gap:6}}>
+              <div className="history-card-desktop">
                 {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
                 {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
                 {WEEK_SCHEDULE.map((week,wi)=>{
-                  // Check if any pass in this week has a log
                   const weekPasses = week.passes.filter(Boolean);
                   const hasAny = weekPasses.some(p => logs.find(l=>l.date===p.date));
                   if (!hasAny) return null;
                   return (
-                    <div key={wi} className="history-week-row" style={{display:"grid",gridTemplateColumns:"52px 1fr 1fr 1fr",gap:8,marginBottom:8,alignItems:"start"}}>
-                      <div className="history-week-label" style={{display:"flex",flexDirection:"column",paddingTop:6}}>
+                    <div key={wi} className="history-week-row">
+                      <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
                         <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
                         <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
                       </div>
@@ -1245,8 +1357,7 @@ function App() {
                 })}
               </div>
             </div>
-          );
-        })()}
+        )}
 
         {/* ── TREND ── */}
         {view==="chart"&&(
