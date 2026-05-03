@@ -1316,73 +1316,69 @@ function App() {
               </>
             )}
 
-            {form.type==="WW"&&(()=>{
-              const wwRounds = (form.wwRounds && form.wwRounds.length > 0) ? form.wwRounds : [[]];
-              function toggleWWStep(ri, step) {
-                const cur = wwRounds[ri] || [];
-                const next = cur.includes(step) ? cur.filter(s=>s!==step) : [...cur, step];
-                setForm(f=>({...f, wwRounds: wwRounds.map((r,i)=>i===ri?next:r)}));
-              }
-              return (
-                <>
-                  <div style={{background:C.ww,border:`1px solid ${C.wwBorder}`,borderRadius:8,padding:"10px 12px",fontSize:"0.72rem",color:C.wwText,lineHeight:1.7}}>
-                    <strong>WW:</strong> 5+5 → 4+4 → 3+3 → 2+2 → 1+1 cleans+squats per rond.
+            {form.type==="WW"&&(
+              <>
+                <div style={{background:C.ww,border:`1px solid ${C.wwBorder}`,borderRadius:8,padding:"10px 12px",fontSize:"0.72rem",color:C.wwText,lineHeight:1.7}}>
+                  <strong>WW:</strong> 5+5 → 4+4 → 3+3 → 2+2 → 1+1 cleans+squats per rond.
+                </div>
+                <Row label="Vikt (kg)">
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {["12","16","20","24"].map(w=>(
+                      <button key={w} onClick={()=>setForm({...form,wwKg:w})} style={{
+                        background:form.wwKg===w?C.accentLight:C.bg,
+                        border:`2px solid ${form.wwKg===w?C.accent:C.border2}`,
+                        color:form.wwKg===w?C.accent:C.muted,
+                        padding:"7px 18px",borderRadius:6,cursor:"pointer",
+                        fontSize:"0.85rem",fontWeight:form.wwKg===w?700:500,touchAction:"manipulation",
+                      }}>{w} kg</button>
+                    ))}
                   </div>
-                  <Row label="Vikt (kg)">
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {["12","16","20","24"].map(w=>(
-                        <button key={w} onClick={()=>setForm(f=>({...f,wwKg:w}))} style={{
-                          background:form.wwKg===w?C.accentLight:C.bg,
-                          border:`2px solid ${form.wwKg===w?C.accent:C.border2}`,
-                          color:form.wwKg===w?C.accent:C.muted,
-                          padding:"7px 18px",borderRadius:6,cursor:"pointer",
-                          fontSize:"0.85rem",fontWeight:form.wwKg===w?700:500,touchAction:"manipulation",
-                        }}>{w} kg</button>
-                      ))}
-                    </div>
-                  </Row>
-                  <Row label="Ronder">
-                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                      {wwRounds.map((round,ri)=>(
-                        <div key={ri} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                            <span style={{fontSize:"0.72rem",color:C.muted,fontWeight:600}}>Rond {ri+1}</span>
-                            {wwRounds.length>1&&(
-                              <button onClick={()=>setForm(f=>({...f,wwRounds:wwRounds.filter((_,j)=>j!==ri).length>0?wwRounds.filter((_,j)=>j!==ri):[[]]}))} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.8rem",touchAction:"manipulation"}}>✕</button>
-                            )}
-                          </div>
-                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                            {["5+5","4+4","3+3","2+2","1+1"].map(step=>{
-                              const done=round.includes(step);
-                              return (
-                                <button key={step} onClick={()=>toggleWWStep(ri,step)} style={{
-                                  background:done?C.accentLight:C.bg,
-                                  border:`2px solid ${done?C.accent:C.border2}`,
-                                  color:done?C.accent:C.muted,
-                                  padding:"6px 12px",borderRadius:6,cursor:"pointer",
-                                  fontSize:"0.78rem",fontWeight:done?700:500,touchAction:"manipulation",
-                                }}>{done?"✓ ":""}{step}</button>
-                              );
-                            })}
-                          </div>
-                          <div style={{marginTop:6,fontSize:"0.65rem",color:round.length===5?C.accent:C.faint}}>
-                            {round.length===5?"✓ Komplett rond":`${round.length}/5 steg`}
-                          </div>
+                </Row>
+                <Row label="Ronder">
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {(form.wwRounds.length>0?form.wwRounds:[[]]).map((round,ri)=>(
+                      <div key={ri} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                          <span style={{fontSize:"0.72rem",color:C.muted,fontWeight:600}}>Rond {ri+1}</span>
+                          {form.wwRounds.length>1&&(
+                            <button onClick={()=>setForm({...form,wwRounds:form.wwRounds.filter((_,j)=>j!==ri)})} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.8rem",touchAction:"manipulation"}}>✕</button>
+                          )}
                         </div>
-                      ))}
-                      {wwRounds.length<5&&(
-                        <button onClick={()=>setForm(f=>({...f,wwRounds:[...wwRounds,[]]}))} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",touchAction:"manipulation"}}>
-                          + Lägg till rond
-                        </button>
-                      )}
-                    </div>
-                  </Row>
-                  <Row label="Anteckningar (valfritt)">
-                    <textarea value={form.wwNotes||""} onChange={e=>{const v=e.target.value;setForm(f=>({...f,wwNotes:v}));}} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
-                  </Row>
-                </>
-              );
-            })()}
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                          {["5+5","4+4","3+3","2+2","1+1"].map(step=>{
+                            const done=round.includes(step);
+                            const newRound=done?round.filter(s=>s!==step):[...round,step];
+                            const newRounds=form.wwRounds.length>0
+                              ?form.wwRounds.map((r,i)=>i===ri?newRound:r)
+                              :[newRound];
+                            return (
+                              <button key={step} onClick={()=>setForm({...form,wwRounds:newRounds})} style={{
+                                background:done?C.accentLight:C.bg,
+                                border:`2px solid ${done?C.accent:C.border2}`,
+                                color:done?C.accent:C.muted,
+                                padding:"6px 12px",borderRadius:6,cursor:"pointer",
+                                fontSize:"0.78rem",fontWeight:done?700:500,touchAction:"manipulation",
+                              }}>{done?"✓ ":""}{step}</button>
+                            );
+                          })}
+                        </div>
+                        <div style={{marginTop:6,fontSize:"0.65rem",color:round.length===5?C.accent:C.faint}}>
+                          {round.length===5?"✓ Komplett rond":`${round.length}/5 steg`}
+                        </div>
+                      </div>
+                    ))}
+                    {form.wwRounds.length<5&&(
+                      <button onClick={()=>setForm({...form,wwRounds:[...(form.wwRounds.length>0?form.wwRounds:[[]]),[]]})} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",touchAction:"manipulation"}}>
+                        + Lägg till rond
+                      </button>
+                    )}
+                  </div>
+                </Row>
+                <Row label="Anteckningar (valfritt)">
+                  <textarea value={form.wwNotes||""} onChange={e=>setForm({...form,wwNotes:e.target.value})} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
+                </Row>
+              </>
+            )}
 
             <Row label="Känsla">
               <div style={{display:"flex",gap:8}}>
@@ -1432,37 +1428,55 @@ function App() {
             <div className="history-card-desktop">
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
               {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
-              {WEEK_SCHEDULE.map((week,wi)=>{
-                const weekPasses = week.passes.filter(Boolean);
-                // Match logs by date OR show any log from that week's date range
-                const weekLogs = weekPasses.map(p=>logs.find(l=>l.date===p.date)||null);
-                const hasAny = weekLogs.some(l=>l!==null);
-                if (!hasAny) return null;
-                return (
-                  <div key={wi} className="history-week-row">
-                    <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
-                      <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
-                      <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
-                    </div>
-                    {weekLogs.map((logged,pi)=>{
-                      if(week.passes[pi]===null) return <div key={pi} style={{visibility:"hidden"}}/>;
-                      return <LogCardCompact key={pi} l={logged||null} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
-                    })}
-                  </div>
-                );
-              })}
-              {/* Also show logs that don't match any scheduled date (e.g. WW, Annat) */}
               {(()=>{
-                const scheduledDates = new Set(WEEK_SCHEDULE.flatMap(w=>w.passes.filter(Boolean).map(p=>p.date)));
-                const unscheduled = logs.filter(l=>!scheduledDates.has(l.date));
-                if (unscheduled.length===0) return null;
-                return (
-                  <div style={{marginTop:8}}>
-                    <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent,marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${C.border}`}}>Övriga pass</div>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {unscheduled.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
+                // Build a set of all logs already shown in week grid
+                const shownIds = new Set();
+                const weekRows = WEEK_SCHEDULE.map((week,wi)=>{
+                  const weekPasses = week.passes.filter(Boolean);
+                  // For each slot, find a log from same week (±3 days) with matching type
+                  const weekLogs = weekPasses.map(p=>{
+                    // Try exact date first
+                    let match = logs.find(l=>l.date===p.date);
+                    // Fallback: same week window (Mon-Sun) and same type
+                    if (!match) {
+                      const pDate = new Date(p.date+"T12:00:00");
+                      match = logs.find(l=>{
+                        if (l.type!==p.type) return false;
+                        const diff = Math.abs(new Date(l.date+"T12:00:00") - pDate);
+                        return diff <= 4*24*3600*1000; // within 4 days
+                      });
+                    }
+                    if (match) shownIds.add(match.id);
+                    return match||null;
+                  });
+                  const hasAny = weekLogs.some(l=>l!==null);
+                  if (!hasAny) return null;
+                  return (
+                    <div key={wi} className="history-week-row">
+                      <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
+                        <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
+                        <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
+                      </div>
+                      {weekLogs.map((logged,pi)=>{
+                        if(week.passes[pi]===null) return <div key={pi} style={{visibility:"hidden"}}/>;
+                        return <LogCardCompact key={pi} l={logged||null} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
+                      })}
                     </div>
-                  </div>
+                  );
+                });
+                const unscheduled = logs.filter(l=>!shownIds.has(l.id));
+                return (
+                  <>
+                    {weekRows}
+                    {unscheduled.length>0&&(
+                      <div style={{marginTop:12}}>
+                        <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent,marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${C.border}`}}>Övriga pass</div>
+                        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                          {unscheduled.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 );
               })()}
             </div>
