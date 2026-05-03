@@ -76,27 +76,27 @@ const C = {
 };
 
 const WEEK_SCHEDULE = [
-  {week:"V1",phase:"Inlärn.",dateRange:"31 mar–4 apr",passes:[
+  {week:"V1",phase:"Inlärn.",dateRange:"30 mar–5 apr",passes:[
     {pass:"Pass 1",type:"Press",detail:"5–6 set · 2·3·5",weight:"24 kg"},
     {pass:"Pass 2",type:"ABC",detail:"Mål: 10 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 3",type:"Press",detail:"5–6 set · 2·3·5",weight:"24 kg"},
   ]},
-  {week:"V2",phase:"Inlärn.",dateRange:"7–11 apr",passes:[
+  {week:"V2",phase:"Inlärn.",dateRange:"6–12 apr",passes:[
     {pass:"Pass 1",type:"ABC",detail:"Mål: 11 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 2",type:"Press",detail:"5–6 set · 2·3·5",weight:"24 kg"},
     {pass:"Pass 3",type:"ABC",detail:"Mål: 12 set · 90 sek",weight:"Dubbla 24 kg"},
   ]},
-  {week:"V3",phase:"Bygg 1",dateRange:"14–18 apr",passes:[
+  {week:"V3",phase:"Bygg 1",dateRange:"13–19 apr",passes:[
     {pass:"Pass 1",type:"Press",detail:"6–7 set · 2·3·5",weight:"24 kg"},
     {pass:"Pass 2",type:"ABC",detail:"Mål: 13 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 3",type:"Press",detail:"10 set · 2·3·5",weight:"24 kg"},
   ]},
-  {week:"V4",phase:"Bygg 2",dateRange:"22–26 apr",passes:[
+  {week:"V4",phase:"Bygg 2",dateRange:"20–26 apr",passes:[
     {pass:"Pass 1",type:"ABC",detail:"Mål: 14 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 2",type:"Press",detail:"7–8 set · 2·3·5",weight:"24 kg"},
     {pass:"Pass 3",type:"ABC",detail:"Mål: 15 set · 90 sek",weight:"Dubbla 24 kg"},
   ]},
-  {week:"V5",phase:"Bygg 3",dateRange:"29 apr–3 maj",passes:[
+  {week:"V5",phase:"Bygg 3",dateRange:"27 apr–3 maj",passes:[
     {pass:"Pass 1",type:"Press",detail:"8 set · 2·3·5",weight:"24 kg"},
     {pass:"Pass 2",type:"ABC",detail:"Mål: 16 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 3",type:"Press",detail:"10 set · 2·3·5",weight:"24 kg"},
@@ -106,17 +106,17 @@ const WEEK_SCHEDULE = [
     {pass:"Pass 2",type:"Press",detail:"9 set · 2·3·5",weight:"24 kg"},
     {pass:"Pass 3",type:"ABC",detail:"Mål: 18 set · 90 sek",weight:"Dubbla 24 kg"},
   ]},
-  {week:"V7",phase:"Mål",dateRange:"13–17 maj",passes:[
+  {week:"V7",phase:"Mål",dateRange:"11–17 maj",passes:[
     {pass:"Pass 1",type:"Press",detail:"10 set · mot 100 reps",weight:"24 kg"},
     {pass:"Pass 2",type:"ABC",detail:"Mål: 19 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 3",type:"Press",detail:"10 set · push mot 100",weight:"24 kg"},
   ]},
-  {week:"V8",phase:"Mål",dateRange:"20–24 maj",passes:[
+  {week:"V8",phase:"Mål",dateRange:"18–24 maj",passes:[
     {pass:"Pass 1",type:"ABC",detail:"Mål: 20 set · 90 sek",weight:"Dubbla 24 kg"},
     {pass:"Pass 2",type:"Press",detail:"10 set · 100 reps ✓",weight:"24 kg"},
     {pass:"Pass 3",type:"ABC",detail:"Mål: 23 set · 78 sek 🎯",weight:"Dubbla 24 kg"},
   ]},
-  {week:"V9",phase:"→ Giant",dateRange:"27–29 maj",passes:[
+  {week:"V9",phase:"→ Giant",dateRange:"25–31 maj",passes:[
     {pass:"Pass 1",type:"Övergång",detail:"Nedvarvning",weight:"—"},
     {pass:"Pass 2",type:"Övergång",detail:"Notera utgångspunkt",weight:"—"},
     null,
@@ -142,7 +142,14 @@ function formatDate(d) {
 }
 
 function todayStr() { return new Date().toISOString().split("T")[0]; }
-function emptyStege() { return {two:{kg:"24",pp:0},three:{kg:"24",pp:0},five:{kg:"20",pp:0,split:""}}; }
+function emptyStege() {
+  return {
+    two:   {kg:"24",pp:0},
+    three: {kg:"24",pp:0},
+    five:  {kg:"20",pp:0,split:""},
+    ten:   {kg:"16",pp:0,split:""},
+  };
+}
 
 const emptyForm = {
   date:todayStr(),type:"Press",steges:[emptyStege()],
@@ -156,7 +163,8 @@ const emptyForm = {
 
 function totalPP(log) {
   if (!log.steges) return 0;
-  return log.steges.reduce((sum,s)=>sum+(s.two?.pp||0)+(s.three?.pp||0)+(s.five?.pp||0),0);
+  return log.steges.reduce((sum,s)=>
+    sum+(s.two?.pp||0)+(s.three?.pp||0)+(s.five?.pp||0)+(s.ten?.pp||0),0);
 }
 
 // ── SUPABASE ──
@@ -235,34 +243,39 @@ function Slider({value,onChange,labels,accent}) {
 
 const ppBtn = {
   background:C.bg,border:`1px solid ${C.border2}`,color:C.muted,
-  width:28,height:28,borderRadius:4,cursor:"pointer",
-  fontSize:"1.1rem",fontFamily:"inherit",padding:0,
+  width:38,height:38,borderRadius:6,cursor:"pointer",
+  fontSize:"1.4rem",fontFamily:"inherit",padding:0,
   display:"flex",alignItems:"center",justifyContent:"center",
   touchAction:"manipulation",
 };
 
-function StegeCell({kg,pp,split,onKg,onPP,onSplit,maxReps,showSplit}) {
-  const clean=maxReps-pp, isClean=pp===0&&!split;
+function RepCell({label, kg, pp, maxReps, split, showSplit, onKg, onPP, onSplit}) {
+  const clean = maxReps - pp;
+  const isClean = pp === 0 && !split;
+  const WEIGHTS = ["16","20","24"];
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+    <div style={{border:`1px solid ${pp>0?C.orangeBorder:isClean&&pp===0&&!split?C.abcBorder:C.border}`,borderRadius:7,padding:"7px 8px",background:pp>0?C.orangeBg:isClean?"#f4f8ee":C.surface,display:"flex",flexDirection:"column",gap:5}}>
+      <div style={{fontSize:"0.52rem",color:C.faint,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:600}}>{label}</div>
+      {/* Weight picker */}
       <div style={{display:"flex",gap:3}}>
-        {["20","24"].map(w=>(
+        {WEIGHTS.map(w=>(
           <button key={w} onClick={()=>onKg(w)} style={{
             flex:1,background:kg===w?C.accentLight:C.bg,
             border:`1px solid ${kg===w?C.accent:C.border}`,
             color:kg===w?C.accent:C.muted,
-            padding:"6px 0",borderRadius:4,cursor:"pointer",
-            fontSize:"0.75rem",fontFamily:"inherit",fontWeight:kg===w?700:500,
+            padding:"4px 0",borderRadius:3,cursor:"pointer",
+            fontSize:"0.62rem",fontFamily:"inherit",fontWeight:kg===w?700:400,
             touchAction:"manipulation",
           }}>{w}</button>
         ))}
       </div>
-      {!split && (
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-          background:C.bg,border:`1px solid ${pp>0?C.orangeBorder:C.abcBorder}`,
-          borderRadius:4,padding:"4px 6px"}}>
-          <span style={{fontSize:"0.65rem",color:isClean?C.abcText:C.orange,minWidth:36}}>
-            {isClean?`${maxReps}✓`:`${clean}✓ ${pp}PP`}
+      {/* PP row or split */}
+      {split ? (
+        <div style={{fontSize:"0.62rem",color:C.pressText,fontWeight:600}}>{split}</div>
+      ) : (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:"0.68rem",fontWeight:700,color:isClean?C.abcText:C.orange}}>
+            {isClean ? `${maxReps}✓` : `${clean}✓ ${pp}PP`}
           </span>
           <div style={{display:"flex",gap:3}}>
             <button onClick={()=>onPP(Math.max(0,pp-1))} style={ppBtn}>−</button>
@@ -270,11 +283,46 @@ function StegeCell({kg,pp,split,onKg,onPP,onSplit,maxReps,showSplit}) {
           </div>
         </div>
       )}
+      {/* Split toggle for ten */}
       {showSplit && (
-        <input placeholder="delad? 3×24+2×20" value={split||""}
+        <input
+          placeholder={split?"":"dela? t.ex. 6×20+4×16"}
+          value={split||""}
           onChange={e=>{onSplit(e.target.value);if(e.target.value)onPP(0);}}
-          style={{...IS,padding:"4px 6px"}} />
+          style={{...IS,fontSize:"0.6rem",padding:"3px 6px",borderRadius:4}}
+        />
       )}
+    </div>
+  );
+}
+
+function StegeCell({s, idx, totalSteges, onUpdate, onRemove}) {
+  const isActive = idx === totalSteges - 1;
+  function upd(col, field, val) {
+    onUpdate(idx, col, field, val);
+  }
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:9,padding:"10px 11px",opacity:isActive?1:0.38,transition:"opacity 0.2s",position:"relative"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <span style={{fontSize:"0.62rem",color:C.muted,fontWeight:600}}>
+          Stege {idx+1}
+          {isActive&&totalSteges>1&&<span style={{marginLeft:6,fontSize:"0.5rem",background:C.accent,color:"#fff",padding:"1px 6px",borderRadius:3,letterSpacing:"0.06em"}}>aktiv</span>}
+        </span>
+        {totalSteges>1&&(
+          <button onClick={onRemove} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.75rem",padding:0,touchAction:"manipulation"}}>✕</button>
+        )}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+        <RepCell label="2 reps" kg={s.two?.kg||"24"} pp={s.two?.pp||0} maxReps={2}
+          onKg={v=>upd("two","kg",v)} onPP={v=>upd("two","pp",v)}/>
+        <RepCell label="3 reps" kg={s.three?.kg||"24"} pp={s.three?.pp||0} maxReps={3}
+          onKg={v=>upd("three","kg",v)} onPP={v=>upd("three","pp",v)}/>
+        <RepCell label="5 reps" kg={s.five?.kg||"20"} pp={s.five?.pp||0} maxReps={5}
+          onKg={v=>upd("five","kg",v)} onPP={v=>upd("five","pp",v)}/>
+        <RepCell label="10 reps" kg={s.ten?.kg||"16"} pp={s.ten?.pp||0} maxReps={10}
+          split={s.ten?.split||""} showSplit
+          onKg={v=>upd("ten","kg",v)} onPP={v=>upd("ten","pp",v)} onSplit={v=>upd("ten","split",v)}/>
+      </div>
     </div>
   );
 }
@@ -664,23 +712,22 @@ function LogCard({l, onSelect, confirmId, setConfirmId, deleteLog}) {
         </div>
       </div>
       {l.type==="Press"&&l.steges&&(
-        <div style={{display:"flex",flexDirection:"column",gap:3}}>
-          <div style={{display:"grid",gridTemplateColumns:"22px 1fr 1fr 1fr",gap:4,marginBottom:2}}>
-            <div/>
-            {["2","3","5"].map(h=><div key={h} style={{fontSize:"0.52rem",letterSpacing:"0.08em",textTransform:"uppercase",color:C.faint,textAlign:"center"}}>{h} reps</div>)}
-          </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {l.steges.map((s,i)=>(
-            <div key={i} style={{display:"grid",gridTemplateColumns:"22px 1fr 1fr 1fr",gap:4}}>
-              <div style={{fontSize:"0.58rem",color:C.faint,display:"flex",alignItems:"center",justifyContent:"center"}}>{i+1}</div>
-              {[{d:s.two,reps:2},{d:s.three,reps:3},{d:s.five,reps:5}].map(({d,reps})=>{
-                if(!d) return <div key={reps}/>;
-                const pp2=d.pp||0,clean=reps-pp2,split=d.split,isClean=pp2===0&&!split;
-                return (
-                  <div key={reps} style={{background:isClean?C.abc:C.orangeBg,border:`1px solid ${isClean?C.abcBorder:C.orangeBorder}`,borderRadius:4,padding:"3px 6px",textAlign:"center"}}>
-                    {split?<span style={{fontSize:"0.58rem",color:C.pressText}}>{split}</span>:<span style={{fontSize:"0.62rem",color:isClean?C.abcText:C.orange}}>{isClean?`${reps}×${d.kg}✓`:`${clean}✓ +${pp2}PP`}</span>}
-                  </div>
-                );
-              })}
+            <div key={i} style={{border:`1px solid ${C.border}`,borderRadius:7,padding:"7px 9px",background:C.bg}}>
+              <div style={{fontSize:"0.55rem",color:C.faint,fontWeight:600,marginBottom:5}}>Stege {i+1}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                {[{d:s.two,reps:2,label:"2r"},{d:s.three,reps:3,label:"3r"},{d:s.five,reps:5,label:"5r"},{d:s.ten||{kg:"16",pp:0,split:""},reps:10,label:"10r"}].map(({d,reps,label})=>{
+                  if(!d) return null;
+                  const pp2=d.pp||0,clean=reps-pp2,split=d.split,isClean=pp2===0&&!split;
+                  return (
+                    <div key={reps} style={{background:isClean?"#f4f8ee":C.orangeBg,border:`1px solid ${isClean?C.abcBorder:C.orangeBorder}`,borderRadius:4,padding:"3px 7px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:"0.52rem",color:C.faint}}>{label}</span>
+                      {split?<span style={{fontSize:"0.6rem",color:C.pressText,fontWeight:600}}>{split}</span>:<span style={{fontSize:"0.62rem",color:isClean?C.abcText:C.orange,fontWeight:600}}>{isClean?`${reps}×${d.kg}✓`:`${clean}✓ +${pp2}PP`}</span>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
@@ -752,7 +799,7 @@ function LogCard({l, onSelect, confirmId, setConfirmId, deleteLog}) {
 }
 
 // ── LOG DETAIL MODAL ──
-function LogDetailModal({l, onClose, deleteLog}) {
+function LogDetailModal({l, onClose, onEdit, deleteLog}) {
   if (!l) return null;
   const col = passColor(l.type);
   const feeling = l.feeling ?? 2;
@@ -778,14 +825,14 @@ function LogDetailModal({l, onClose, deleteLog}) {
               return (
                 <div key={i} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 10px",marginBottom:6}}>
                   <div style={{fontSize:"0.65rem",color:C.muted,fontWeight:600,marginBottom:4}}>Stege {i+1}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                    {[{d:s.two,reps:2},{d:s.three,reps:3},{d:s.five,reps:5}].map(({d,reps})=>{
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                    {[{d:s.two,reps:2},{d:s.three,reps:3},{d:s.five,reps:5},{d:s.ten||{kg:"16",pp:0,split:""},reps:10}].map(({d,reps})=>{
                       if(!d) return null;
                       const pp2=d.pp||0,clean=reps-pp2,split=d.split,isClean=pp2===0&&!split;
                       return (
-                        <div key={reps} style={{background:isClean?C.abc:C.orangeBg,border:`1px solid ${isClean?C.abcBorder:C.orangeBorder}`,borderRadius:4,padding:"4px 8px",textAlign:"center"}}>
+                        <div key={reps} style={{background:isClean?"#f4f8ee":C.orangeBg,border:`1px solid ${isClean?C.abcBorder:C.orangeBorder}`,borderRadius:4,padding:"4px 8px"}}>
                           <div style={{fontSize:"0.55rem",color:C.faint}}>{reps} reps</div>
-                          {split?<div style={{fontSize:"0.65rem",color:C.pressText}}>{split}</div>:<div style={{fontSize:"0.7rem",color:isClean?C.abcText:C.orange,fontWeight:600}}>{isClean?`${reps}×${d.kg}✓`:`${clean}✓ +${pp2}PP`}</div>}
+                          {split?<div style={{fontSize:"0.65rem",color:C.pressText,fontWeight:600}}>{split}</div>:<div style={{fontSize:"0.7rem",color:isClean?C.abcText:C.orange,fontWeight:600}}>{isClean?`${reps}×${d.kg}✓`:`${clean}✓ +${pp2}PP`}</div>}
                         </div>
                       );
                     })}
@@ -849,7 +896,19 @@ function LogDetailModal({l, onClose, deleteLog}) {
         {l.bodyLog&&<div style={{marginBottom:10,fontSize:"0.7rem",color:C.orange,lineHeight:1.6}}>📝 {l.bodyLog}</div>}
         {l.notes&&<div style={{marginBottom:14,fontSize:"0.7rem",color:C.muted,lineHeight:1.6,fontStyle:"italic"}}>{l.notes}</div>}
 
-        <button onClick={onClose} style={{background:C.accent,border:"none",color:"#fff",padding:"12px 28px",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.85rem",width:"100%",touchAction:"manipulation"}}>Stäng</button>
+        <div style={{display:"flex",gap:10,flexDirection:"column"}}>
+          <button onClick={()=>{onEdit(l);onClose();}} style={{background:C.accent,border:"none",color:"#fff",padding:"12px 28px",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.85rem",width:"100%",touchAction:"manipulation"}}>
+            ✏️ Redigera pass
+          </button>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={onClose} style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,color:C.muted,padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:"0.8rem",touchAction:"manipulation"}}>
+              Stäng
+            </button>
+            <button onClick={()=>{if(window.confirm("Radera det här passet?"))deleteLog(l.id);onClose();}} style={{background:"#fff0f0",border:"1px solid #f0b8b8",color:C.red,padding:"10px 16px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:"0.8rem",touchAction:"manipulation"}}>
+              🗑 Radera
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1148,7 +1207,7 @@ function App() {
 
   return (
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Mono','Courier New',monospace"}}>
-      {selectedLog&&<LogDetailModal l={selectedLog} onClose={()=>setSelectedLog(null)} deleteLog={deleteLog}/>}
+      {selectedLog&&<LogDetailModal l={selectedLog} onClose={()=>setSelectedLog(null)} onEdit={(l)=>{setForm({...l,wwRounds:l.wwRounds?.length>0?l.wwRounds:[[]]});setView("log");}} deleteLog={deleteLog}/>}
       {dbError && (
         <div style={{background:"#fff0f0",borderBottom:"1px solid #f0b8b8",padding:"10px 20px",fontSize:"0.7rem",color:C.red,textAlign:"center"}}>
           ⚠️ {dbError}
@@ -1387,20 +1446,14 @@ function App() {
             {form.type==="Press"&&(
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 <label style={{fontSize:"0.65rem",letterSpacing:"0.12em",textTransform:"uppercase",color:C.muted,fontWeight:600}}>Stegar</label>
-                <div style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 1fr",gap:6}}>
-                  <div/>
-                  {["2 reps","3 reps","5 reps"].map(h=><div key={h} style={{fontSize:"0.55rem",letterSpacing:"0.08em",textTransform:"uppercase",color:C.faint,textAlign:"center",paddingBottom:4}}>{h}</div>)}
-                </div>
                 {form.steges.map((s,idx)=>(
-                  <div key={idx} style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 1fr",gap:6,alignItems:"start"}}>
-                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:10,gap:4}}>
-                      <span style={{fontSize:"0.65rem",color:C.muted}}>{idx+1}</span>
-                      {form.steges.length>1&&<button onClick={()=>setForm({...form,steges:form.steges.filter((_,i)=>i!==idx)})} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.75rem",padding:0,touchAction:"manipulation"}}>✕</button>}
-                    </div>
-                    <StegeCell kg={s.two.kg} pp={s.two.pp} maxReps={2} onKg={v=>updateStege(idx,"two","kg",v)} onPP={v=>updateStege(idx,"two","pp",v)}/>
-                    <StegeCell kg={s.three.kg} pp={s.three.pp} maxReps={3} onKg={v=>updateStege(idx,"three","kg",v)} onPP={v=>updateStege(idx,"three","pp",v)}/>
-                    <StegeCell kg={s.five.kg} pp={s.five.pp} split={s.five.split} maxReps={5} showSplit onKg={v=>updateStege(idx,"five","kg",v)} onPP={v=>updateStege(idx,"five","pp",v)} onSplit={v=>updateStege(idx,"five","split",v)}/>
-                  </div>
+                  <StegeCell key={idx} s={s} idx={idx} totalSteges={form.steges.length}
+                    onUpdate={(i,col,field,val)=>{
+                      const steges=form.steges.map((st,j)=>j!==i?st:{...st,[col]:{...st[col],[field]:val}});
+                      setForm({...form,steges});
+                    }}
+                    onRemove={()=>setForm({...form,steges:form.steges.filter((_,i)=>i!==idx)})}
+                  />
                 ))}
                 <button onClick={()=>setForm({...form,steges:[...form.steges,emptyStege()]})} style={{background:C.bg,border:`1px dashed ${C.border2}`,color:C.muted,padding:"8px",borderRadius:6,cursor:"pointer",fontSize:"0.65rem",letterSpacing:"0.1em",fontFamily:"inherit",textTransform:"uppercase",touchAction:"manipulation"}}>+ Lägg till stege</button>
               </div>
@@ -1588,8 +1641,11 @@ function App() {
                   ["2026-05-26","2026-05-31"], // V9
                 ];
 
+                const today = todayStr();
                 const weekRowsReal = WEEK_SCHEDULE.map((week,wi)=>{
                   const [wFrom, wTo] = wkRanges[wi] || ["2099-01-01","2099-01-02"];
+                  // Only show weeks that have started (wFrom <= today)
+                  if (wFrom > today) return null;
                   const weekLogs = logs.filter(l=>l.date>=wFrom&&l.date<=wTo);
                   weekLogs.forEach(l=>shownIds.add(l.id));
                   const weekPasses = week.passes.filter(Boolean);
