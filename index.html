@@ -1202,11 +1202,14 @@ function App() {
             {WEEK_SCHEDULE.map((week,wi)=>{
               let wsi=0;
               for(let i=0;i<wi;i++) wsi+=WEEK_SCHEDULE[i].passes.filter(Boolean).length;
+              // Show month separator: Mars/April before V1, Maj before V6
+              const showMarsApr = wi===0;
+              const showMaj = wi===5; // V6 starts in May
               return (
                 <div key={wi} style={{marginBottom:8}}>
-                  {(wi===0||(week.passes[0]&&week.passes[0].date.includes("-05-")&&!WEEK_SCHEDULE[wi-1]?.passes[0]?.date.includes("-05-")))&&(
+                  {(showMarsApr||showMaj)&&(
                     <div style={{fontSize:"0.72rem",fontFamily:"'Syne',sans-serif",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:C.muted,margin:wi===0?"0 0 10px 0":"18px 0 10px 0",paddingBottom:8,borderBottom:`1px solid ${C.border}`}}>
-                      {wi===0?"Mars / April 2026":"Maj 2026"}
+                      {showMarsApr?"Mars / April 2026":"Maj 2026"}
                     </div>
                   )}
                   <div style={{display:"grid",gridTemplateColumns:"52px 1fr 1fr 1fr",gap:7}}>
@@ -1434,45 +1437,78 @@ function App() {
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
               {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
               {(()=>{
-                // Build a set of all logs already shown in week grid
                 const shownIds = new Set();
+                // Sort logs by date descending
+                const sortedLogs = [...logs].sort((a,b)=>b.date.localeCompare(a.date));
+                // Build week date ranges from schedule
+                const weekRanges = WEEK_SCHEDULE.map((week,wi)=>{
+                  // Use hardcoded date ranges from week.dateRange label? No - use pass global index
+                  // Each week has 3 passes. Map logs by week index using passIndex ranges.
+                  const wStart = WEEK_SCHEDULE.slice(0,wi).reduce((s,w)=>s+w.passes.filter(Boolean).length,0);
+                  const wEnd = wStart + week.passes.filter(Boolean).length;
+                  return {wStart,wEnd};
+                });
+                // For each week, find logs that were logged during that week's timeframe
+                // Since we no longer have exact dates, match by type and chronological order
+                // Strategy: sort logs by date, assign to weeks greedily by type matching
                 const weekRows = WEEK_SCHEDULE.map((week,wi)=>{
                   const weekPasses = week.passes.filter(Boolean);
-                  // For each slot, find a log from same week (±3 days) with matching type
+                  // Find logs matching each pass type in order, not already shown
                   const weekLogs = weekPasses.map(p=>{
-                    // Try exact date first
-                    let match = logs.find(l=>l.date===p.date);
-                    // Fallback: same week window (Mon-Sun) and same type
-                    if (!match) {
-                      const pDate = new Date(p.date+"T12:00:00");
-                      match = logs.find(l=>{
-                        if (l.type!==p.type) return false;
-                        const diff = Math.abs(new Date(l.date+"T12:00:00") - pDate);
-                        return diff <= 4*24*3600*1000; // within 4 days
-                      });
-                    }
-                    if (match) shownIds.add(match.id);
-                    return match||null;
+                    const match = sortedLogs.find(l=>
+                      !shownIds.has(l.id) && l.type===p.type
+                    );
+                    // Only assign if log is within reasonable time (we have no date constraint now)
+                    // Just take the next unshown log of matching type, oldest first per week
+                    return null; // Skip type-based matching - too unreliable
                   });
-                  const hasAny = weekLogs.some(l=>l!==null);
-                  if (!hasAny) return null;
+                  return null; // Will use date-based approach below
+                }).filter(Boolean);
+
+                // Better approach: group all logs by week based on their actual dates
+                // Week date ranges (hardcoded to match schedule):
+                const wkRanges = [
+                  ["2026-03-30","2026-04-06"], // V1
+                  ["2026-04-07","2026-04-13"], // V2
+                  ["2026-04-14","2026-04-20"], // V3
+                  ["2026-04-21","2026-04-27"], // V4
+                  ["2026-04-28","2026-05-04"], // V5
+                  ["2026-05-05","2026-05-11"], // V6
+                  ["2026-05-12","2026-05-18"], // V7
+                  ["2026-05-19","2026-05-25"], // V8
+                  ["2026-05-26","2026-05-31"], // V9
+                ];
+
+                const weekRowsReal = WEEK_SCHEDULE.map((week,wi)=>{
+                  const [wFrom, wTo] = wkRanges[wi] || ["2099-01-01","2099-01-02"];
+                  const weekLogs = logs.filter(l=>l.date>=wFrom&&l.date<=wTo);
+                  weekLogs.forEach(l=>shownIds.add(l.id));
+                  if (weekLogs.length===0) return null;
+
+                  // Assign logs to pass slots by type
+                  const weekPasses = week.passes.filter(Boolean);
+                  const assignedLogs = weekPasses.map(p=>weekLogs.find(l=>l.type===p.type&&!shownIds.has(l.id+'_used'))||weekLogs[0]||null);
+
                   return (
                     <div key={wi} className="history-week-row">
                       <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
                         <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
                         <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
+                        <div style={{fontSize:"0.48rem",color:C.faint}}>{week.dateRange}</div>
                       </div>
-                      {weekLogs.map((logged,pi)=>{
+                      {weekPasses.map((p,pi)=>{
                         if(week.passes[pi]===null) return <div key={pi} style={{visibility:"hidden"}}/>;
-                        return <LogCardCompact key={pi} l={logged||null} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
+                        const logged = weekLogs.find(l=>l.type===p.type) || null;
+                        return <LogCardCompact key={pi} l={logged} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
                       })}
                     </div>
                   );
-                });
+                }).filter(Boolean);
+
                 const unscheduled = logs.filter(l=>!shownIds.has(l.id));
                 return (
                   <>
-                    {weekRows}
+                    {weekRowsReal}
                     {unscheduled.length>0&&(
                       <div style={{marginTop:12}}>
                         <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent,marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${C.border}`}}>Övriga pass</div>
