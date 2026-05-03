@@ -40,20 +40,25 @@ const FEELING_LABELS = ["Kört slut","Tung","Ok","Bra","Stark"];
 
 const QUOTES = [
   "Disciplin är att göra det du bestämde dig för när humöret var bättre.",
-  "Du behöver inte känna för det. Du behöver bara göra det.",
-  "Varje rep du inte vill göra är det viktigaste repet.",
   "Kettlebells: billigare än terapi och ungefär lika smärtsamt.",
   "Du ångrar aldrig ett pass. Du ångrar alltid ett inställt.",
-  "Kroppen håller alltid mer än huvudet tror.",
-  "Det går inte att köpa sig fit. Men man kan svettas sig dit.",
-  "Vila är en del av programmet. Soffan är inte det.",
-  "Starka ryggar bär lätta bördor.",
   "Det är inte tungt. Det är bara ovant.",
   "24 kg idag. 28 kg i december. Det är planen.",
-  "Snatch: för den som tycker att marklyft är lite för enkelt.",
-  "Bra sömn, bra mat, bra pass. Välj tre.",
-  "Press. ABC. Upprepa tills December.",
   "Dan John sa det. Du lyssnade. Klokt.",
+  "Kroppen håller alltid mer än huvudet tror.",
+  "Bra sömn, bra mat, bra pass. Välj tre.",
+  "Ingen har någonsin ångrat att de tränade. Däremot många att de åt hela cheesecaken.",
+  "Du är en Rep ifrån att ha gjort något åt det.",
+  "Soffan kallar. Men den kallar alltid.",
+  "Kaffe är pre-workout för vuxna med ansvar.",
+  "Om detta var lätt skulle alla göra det. Men alla gör det inte. Välkommen till det sällskapet.",
+  "Kroppen håller. Det är hjärnan som vill hem tidigt.",
+  "Tre pass i veckan. Det är 156 pass om året. Varje enskilt spelar roll.",
+  "Press. ABC. Upprepa tills December.",
+  "Vila är en del av programmet. Soffan är inte det.",
+  "Starka ryggar bär lätta bördor.",
+  "Det är okej att det känns tungt. Det ÄR tungt.",
+  "Om Dan John är nöjd med upplägget borde du vara det också.",
 ];
 
 const C = {
@@ -157,8 +162,13 @@ function totalPP(log) {
 // ── SUPABASE ──
 async function dbLoadLogs() {
   const {data,error} = await sb.from("training_logs").select("*").order("date",{ascending:false});
-  if (error) throw error;
-  return data.map(r => ({...r.data, id: r.id, date: r.date}));
+  if (error) throw new Error("Fel vid hämtning av loggar: " + error.message);
+  if (!data) return [];
+  return data.map(r => {
+    // Merge r.data (jsonb) with top-level id and date
+    const entry = r.data || {};
+    return {...entry, id: r.id, date: r.date};
+  });
 }
 async function dbSaveLog(entry) {
   const {id, date, ...data} = entry;
@@ -880,14 +890,13 @@ function App() {
         if (outcomesVal) {
           try {
             const raw = JSON.parse(outcomesVal);
-            // Keys from JSON are strings, convert back to numbers
             const fixed = {};
             Object.entries(raw).forEach(([k,v]) => { fixed[Number(k)] = v; });
             setPassOutcomes(fixed);
           } catch(e) {}
         }
       } catch(e) {
-        setDbError("Kunde inte ansluta till databasen.");
+        setDbError("Databasfel: " + e.message);
       }
       setLoading(false);
     }
@@ -1060,38 +1069,45 @@ function App() {
                     <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>
                       {nextPass.type} · {nextPass.day} {nextPass.dateLabel}
                     </div>
-                    <div style={{background:"rgba(255,255,255,0.6)",borderRadius:7,padding:"10px 12px",marginBottom:10,display:"flex",flexDirection:"column",gap:5}}>
+                    <div style={{background:"rgba(255,255,255,0.6)",borderRadius:7,padding:"10px 12px",marginBottom:10}}>
                       {nextPass.weight&&(
-                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          <span style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44,fontWeight:600}}>Vikt</span>
-                          <span style={{fontSize:"0.75rem",color:C.accent,fontFamily:"'Syne',sans-serif",fontWeight:700}}>{nextPass.weight}</span>
+                        <div style={{display:"flex",gap:8,alignItems:"baseline",marginBottom:5}}>
+                          <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:52,fontWeight:600}}>Vikt</span>
+                          <span style={{fontSize:"0.72rem",color:C.accent,fontWeight:700}}>{nextPass.weight}</span>
                         </div>
                       )}
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <span style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44,fontWeight:600}}>Mål</span>
+                      <div style={{display:"flex",gap:8,alignItems:"baseline",marginBottom:5}}>
+                        <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:52,fontWeight:600}}>Mål</span>
                         <span style={{fontSize:"0.72rem",color:C.text}}>{nextPass.detail}</span>
                       </div>
                       {nextPass.type==="Press"&&(
-                        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                          <span style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44,paddingTop:2,fontWeight:600}}>Stege</span>
-                          <div style={{fontSize:"0.68rem",color:C.muted,lineHeight:1.8}}>
-                            <div>2 reps @ 24 kg</div><div>3 reps @ 24 kg</div><div>5 reps @ 20 kg</div>
+                        <div style={{display:"flex",gap:8,alignItems:"baseline"}}>
+                          <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:52,fontWeight:600}}>Stege</span>
+                          <div style={{fontSize:"0.72rem",color:C.muted,lineHeight:1.9}}>
+                            <div>2 reps @ 24 kg</div>
+                            <div>3 reps @ 24 kg</div>
+                            <div>5 reps @ 20 kg</div>
                           </div>
                         </div>
                       )}
-                      {nextPass.type==="ABC"&&(
-                        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                          <span style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:44,paddingTop:2,fontWeight:600}}>Rörelser</span>
-                          <div style={{fontSize:"0.68rem",color:C.muted,lineHeight:1.8}}>
-                            <div>2 cleans + 1 press + 3 squats / set</div>
-                            <div>EMOM · {nextPass.badge}</div>
+                      {nextPass.type==="ABC"&&(()=>{
+                        // Parse secPerSet from detail string to determine timing style
+                        const secMatch = nextPass.detail.match(/(\d+)\s*sek/);
+                        const sec = secMatch ? Number(secMatch[1]) : null;
+                        const isEMOM = sec === 60;
+                        const timingLabel = isEMOM ? "EMOM" : sec ? `${sec} sek/set` : nextPass.badge;
+                        return (
+                          <div style={{display:"flex",gap:8,alignItems:"baseline"}}>
+                            <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,minWidth:52,fontWeight:600}}>Rörelser</span>
+                            <div style={{fontSize:"0.72rem",color:C.muted,lineHeight:1.9}}>
+                              <div>2 cleans + 1 press + 3 squats</div>
+                              <div>{timingLabel}</div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
-                    <div style={{borderLeft:`2px solid ${C.accentMid}`,paddingLeft:10,marginBottom:12}}>
-                      <p style={{fontSize:"0.68rem",color:C.accent,fontStyle:"italic",lineHeight:1.6}}>"{quote}"</p>
-                    </div>
+                    <p style={{fontSize:"0.68rem",color:C.accent,fontStyle:"italic",lineHeight:1.6,marginBottom:12}}>"{quote}"</p>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                       <button onClick={()=>setView("log")} style={{background:C.accent,border:"none",color:"#fff",padding:"10px 20px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.8rem",touchAction:"manipulation"}}>Logga pass →</button>
                       <button onClick={()=>advancePass("done")} style={{background:"transparent",border:`2px solid ${C.accentMid}`,color:C.accent,padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",fontSize:"0.7rem",fontWeight:600,touchAction:"manipulation"}}>Hoppa över</button>
@@ -1330,9 +1346,15 @@ function App() {
         {/* ── HISTORIK ── */}
         {view==="history"&&(
           <div>
+            {dbError&&<div style={{background:"#fff0f0",border:"1px solid #f0b8b8",borderRadius:8,padding:"10px 14px",marginBottom:10,fontSize:"0.7rem",color:C.red}}>⚠️ {dbError}</div>}
             <div className="history-card-mobile">
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
-              {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
+              {!loading&&logs.length===0&&(
+                <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"20px 16px",textAlign:"center"}}>
+                  <p style={{fontSize:"0.72rem",color:C.faint}}>Inga loggade pass ännu.</p>
+                  <p style={{fontSize:"0.65rem",color:C.faint,marginTop:6}}>Logga ditt första pass under + Logga.</p>
+                </div>
+              )}
               {logs.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
             </div>
             <div className="history-card-desktop">
