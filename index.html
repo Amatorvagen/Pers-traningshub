@@ -14,7 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #F0E8DE; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+  body { background: #F0E8DE; -webkit-text-size-adjust: 100%; }
   input:focus, textarea:focus, select:focus { font-size: 16px !important; }
   .history-card-mobile { display: flex; flex-direction: column; gap: 8px; }
   .history-card-desktop { display: none; flex-direction: column; gap: 6px; }
@@ -781,24 +781,32 @@ function LogCardCompact({l, confirmId, setConfirmId, deleteLog}) {
 const WW_STEPS = ["5+5","4+4","3+3","2+2","1+1"];
 
 function WWForm({form, setForm}) {
-  // Ensure at least one round
-  const rounds = form.wwRounds && form.wwRounds.length > 0 ? form.wwRounds : [[]];
+  const rounds = (form.wwRounds && form.wwRounds.length > 0) ? form.wwRounds : [[]];
 
   function toggleStep(roundIdx, step) {
-    const current = rounds[roundIdx] || [];
-    const next = current.includes(step)
-      ? current.filter(s=>s!==step)
-      : [...current, step];
-    const newRounds = rounds.map((r,i)=>i===roundIdx?next:r);
-    setForm({...form, wwRounds: newRounds});
+    setForm(prev => {
+      const prevRounds = (prev.wwRounds && prev.wwRounds.length > 0) ? prev.wwRounds : [[]];
+      const current = prevRounds[roundIdx] || [];
+      const next = current.includes(step)
+        ? current.filter(s=>s!==step)
+        : [...current, step];
+      const newRounds = prevRounds.map((r,i)=>i===roundIdx?next:r);
+      return {...prev, wwRounds: newRounds};
+    });
   }
   function addRound() {
-    if (rounds.length >= 5) return;
-    setForm({...form, wwRounds:[...rounds,[]]});
+    setForm(prev => {
+      const prevRounds = (prev.wwRounds && prev.wwRounds.length > 0) ? prev.wwRounds : [[]];
+      if (prevRounds.length >= 5) return prev;
+      return {...prev, wwRounds:[...prevRounds,[]]};
+    });
   }
   function removeRound(i) {
-    const nr = rounds.filter((_,j)=>j!==i);
-    setForm({...form, wwRounds: nr.length > 0 ? nr : [[]]});
+    setForm(prev => {
+      const prevRounds = (prev.wwRounds && prev.wwRounds.length > 0) ? prev.wwRounds : [[]];
+      const nr = prevRounds.filter((_,j)=>j!==i);
+      return {...prev, wwRounds: nr.length > 0 ? nr : [[]]};
+    });
   }
 
   return (
@@ -809,7 +817,7 @@ function WWForm({form, setForm}) {
       <Row label="Vikt (kg)">
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {["12","16","20","24"].map(w=>(
-            <button key={w} onClick={()=>setForm({...form,wwKg:w})} style={{
+            <button key={w} onClick={()=>setForm(prev=>({...prev,wwKg:w}))} style={{
               background:form.wwKg===w?C.accentLight:C.bg,
               border:`2px solid ${form.wwKg===w?C.accent:C.border2}`,
               color:form.wwKg===w?C.accent:C.muted,
@@ -858,7 +866,7 @@ function WWForm({form, setForm}) {
         </div>
       </Row>
       <Row label="Anteckningar (valfritt)">
-        <textarea value={form.wwNotes||""} onChange={e=>setForm({...form,wwNotes:e.target.value})} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
+        <textarea value={form.wwNotes||""} onChange={e=>{const v=e.target.value;setForm(prev=>({...prev,wwNotes:v}));}} placeholder="Hur kändes det? Vad var svårt?" rows={2} style={{...IS,resize:"vertical"}}/>
       </Row>
     </>
   );
@@ -1353,8 +1361,12 @@ function App() {
             </div>
             <div className="history-card-desktop">
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
+              {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
               {WEEK_SCHEDULE.map((week,wi)=>{
-                const hasAny = week.passes.filter(Boolean).some(p=>logs.find(l=>l.date===p.date));
+                const weekPasses = week.passes.filter(Boolean);
+                // Match logs by date OR show any log from that week's date range
+                const weekLogs = weekPasses.map(p=>logs.find(l=>l.date===p.date)||null);
+                const hasAny = weekLogs.some(l=>l!==null);
                 if (!hasAny) return null;
                 return (
                   <div key={wi} className="history-week-row">
@@ -1362,15 +1374,27 @@ function App() {
                       <div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent}}>{week.week}</div>
                       <div style={{fontSize:"0.55rem",color:C.faint}}>{week.phase}</div>
                     </div>
-                    {[0,1,2].map(pi=>{
-                      const p=week.passes[pi];
-                      if(!p) return <div key={pi} style={{visibility:"hidden"}}/>;
-                      const logged=logs.find(l=>l.date===p.date);
+                    {weekLogs.map((logged,pi)=>{
+                      if(week.passes[pi]===null) return <div key={pi} style={{visibility:"hidden"}}/>;
                       return <LogCardCompact key={pi} l={logged||null} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
                     })}
                   </div>
                 );
               })}
+              {/* Also show logs that don't match any scheduled date (e.g. WW, Annat) */}
+              {(()=>{
+                const scheduledDates = new Set(WEEK_SCHEDULE.flatMap(w=>w.passes.filter(Boolean).map(p=>p.date)));
+                const unscheduled = logs.filter(l=>!scheduledDates.has(l.date));
+                if (unscheduled.length===0) return null;
+                return (
+                  <div style={{marginTop:8}}>
+                    <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent,marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${C.border}`}}>Övriga pass</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {unscheduled.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
