@@ -637,13 +637,13 @@ function SettingsView({logs,passIndex,onImport}) {
 }
 
 // ── HISTORY LOG CARD ──
-function LogCard({l, confirmId, setConfirmId, deleteLog}) {
+function LogCard({l, onSelect, confirmId, setConfirmId, deleteLog}) {
   if (!l) return null;
   const pp=totalPP(l);
   const feeling = l.feeling ?? 2;
-  const cardStyle={background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"13px 15px",boxShadow:`0 1px 3px ${C.shadow}`};
+  const cardStyle={background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"13px 15px",boxShadow:`0 1px 3px ${C.shadow}`,cursor:"pointer"};
   return (
-    <div style={cardStyle}>
+    <div style={cardStyle} onClick={()=>onSelect&&onSelect(l)}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <span style={typeBadge(l.type)}>{l.type}</span>
@@ -751,39 +751,146 @@ function LogCard({l, confirmId, setConfirmId, deleteLog}) {
   );
 }
 
+// ── LOG DETAIL MODAL ──
+function LogDetailModal({l, onClose, deleteLog}) {
+  if (!l) return null;
+  const col = passColor(l.type);
+  const feeling = l.feeling ?? 2;
+  return (
+    <div onClick={onClose} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(58,32,16,0.45)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.surface,borderRadius:"14px 14px 0 0",padding:"22px 20px 40px",width:"100%",maxWidth:680,maxHeight:"85vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+          <div>
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+              <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1.1rem",background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"3px 12px",borderRadius:6}}>{l.type}</span>
+              <span style={{fontSize:"1.1rem"}}>{FEELINGS[feeling]}</span>
+            </div>
+            <div style={{fontSize:"0.7rem",color:C.muted}}>{formatDate(l.date)}</div>
+          </div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"1.4rem",padding:0,touchAction:"manipulation"}}>✕</button>
+        </div>
+
+        {l.type==="Press"&&l.steges&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:8}}>Stegar</div>
+            {l.steges.map((s,i)=>{
+              const pp=totalPP({steges:[s]});
+              return (
+                <div key={i} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"8px 10px",marginBottom:6}}>
+                  <div style={{fontSize:"0.65rem",color:C.muted,fontWeight:600,marginBottom:4}}>Stege {i+1}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                    {[{d:s.two,reps:2},{d:s.three,reps:3},{d:s.five,reps:5}].map(({d,reps})=>{
+                      if(!d) return null;
+                      const pp2=d.pp||0,clean=reps-pp2,split=d.split,isClean=pp2===0&&!split;
+                      return (
+                        <div key={reps} style={{background:isClean?C.abc:C.orangeBg,border:`1px solid ${isClean?C.abcBorder:C.orangeBorder}`,borderRadius:4,padding:"4px 8px",textAlign:"center"}}>
+                          <div style={{fontSize:"0.55rem",color:C.faint}}>{reps} reps</div>
+                          {split?<div style={{fontSize:"0.65rem",color:C.pressText}}>{split}</div>:<div style={{fontSize:"0.7rem",color:isClean?C.abcText:C.orange,fontWeight:600}}>{isClean?`${reps}×${d.kg}✓`:`${clean}✓ +${pp2}PP`}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {l.type==="ABC"&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:8}}>ABC-resultat</div>
+            <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+              {l.sets&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Set @24kg</div><div style={{fontSize:"1rem",fontWeight:700,color:C.abcText}}>{l.sets}</div></div>}
+              {l.secPerSet&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Sek/set</div><div style={{fontSize:"1rem",fontWeight:700,color:C.abcText}}>{l.secPerSet}</div></div>}
+              {l.bonusSets&&Number(l.bonusSets)>0&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Bonus @20</div><div style={{fontSize:"1rem",fontWeight:700,color:C.muted}}>+{l.bonusSets}</div></div>}
+            </div>
+            {l.pauses?.length>0&&(
+              <div style={{marginTop:8}}>
+                <div style={{fontSize:"0.6rem",color:C.faint,marginBottom:4}}>Pauser:</div>
+                {l.pauses.map((p,i)=><div key={i} style={{fontSize:"0.65rem",color:C.orange}}>{p.setsLeft} set kvar → {p.minutes} min vila</div>)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {l.type==="WW"&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:8}}>WW-ronder · {l.wwKg||"?"}kg</div>
+            {l.wwRounds?.map((round,ri)=>(
+              <div key={ri} style={{marginBottom:6,background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,padding:"7px 10px"}}>
+                <div style={{fontSize:"0.62rem",color:C.muted,fontWeight:600,marginBottom:4}}>Rond {ri+1} · {round.length===5?"✓ Komplett":`${round.length}/5 steg`}</div>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {["5+5","4+4","3+3","2+2","1+1"].map(step=>(
+                    <span key={step} style={{fontSize:"0.6rem",padding:"2px 7px",borderRadius:3,background:round.includes(step)?C.accentLight:C.surfaceAlt,color:round.includes(step)?C.accent:C.faint,border:`1px solid ${round.includes(step)?C.accentMid:C.border}`}}>{step}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {l.wwNotes&&<div style={{fontSize:"0.65rem",color:C.muted,marginTop:6,lineHeight:1.5}}>{l.wwNotes}</div>}
+          </div>
+        )}
+
+        {l.type==="Annat"&&l.otherTitle&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:6}}>Pass</div>
+            <div style={{fontSize:"0.85rem",color:C.text,fontWeight:600}}>{l.otherTitle}</div>
+            {l.otherNotes&&<div style={{fontSize:"0.7rem",color:C.muted,marginTop:4,lineHeight:1.5}}>{l.otherNotes}</div>}
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:20,marginBottom:14,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+          <div><div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.1em",textTransform:"uppercase"}}>Sömn</div><div style={{fontSize:"0.8rem",color:C.muted}}>{"★".repeat(l.sleep||2)}</div></div>
+          <div><div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.1em",textTransform:"uppercase"}}>Stress</div><div style={{fontSize:"0.8rem",color:C.muted}}>{"▲".repeat(l.stress||2)}</div></div>
+          {(l.prehabArms||l.prehabKnees)&&(
+            <div><div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.1em",textTransform:"uppercase"}}>Prehab</div><div style={{fontSize:"0.7rem",color:C.accent,fontWeight:600}}>{[l.prehabArms&&"💪 Armar",l.prehabKnees&&"🦵 Knän"].filter(Boolean).join(" · ")}</div></div>
+          )}
+        </div>
+
+        {l.bodyLog&&<div style={{marginBottom:10,fontSize:"0.7rem",color:C.orange,lineHeight:1.6}}>📝 {l.bodyLog}</div>}
+        {l.notes&&<div style={{marginBottom:14,fontSize:"0.7rem",color:C.muted,lineHeight:1.6,fontStyle:"italic"}}>{l.notes}</div>}
+
+        <button onClick={onClose} style={{background:C.accent,border:"none",color:"#fff",padding:"12px 28px",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.85rem",width:"100%",touchAction:"manipulation"}}>Stäng</button>
+      </div>
+    </div>
+  );
+}
+
 // ── COMPACT DESKTOP HISTORY CARD ──
-function LogCardCompact({l, confirmId, setConfirmId, deleteLog}) {
+function LogCardCompact({l, schedPass, onSelect, confirmId, setConfirmId, deleteLog}) {
   if (!l) {
-    return <div style={{background:C.surfaceAlt,border:`1px dashed ${C.border}`,borderRadius:8,padding:"10px",minHeight:70,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <span style={{fontSize:"0.6rem",color:C.faint}}>Inget pass</span>
-    </div>;
+    // Show missed/empty slot with schedule info
+    return (
+      <div style={{background:C.surfaceAlt,border:`1px dashed ${C.border}`,borderRadius:8,padding:"10px",minHeight:70,display:"flex",flexDirection:"column",gap:3,opacity:0.5}}>
+        <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.faint}}>{schedPass?.type||"—"}</div>
+        {schedPass&&<div style={{fontSize:"0.58rem",color:C.faint}}>{schedPass.weight}</div>}
+        {schedPass&&<div style={{fontSize:"0.57rem",color:C.faint,lineHeight:1.4}}>{schedPass.detail}</div>}
+        <div style={{fontSize:"0.55rem",color:C.missedText,textTransform:"uppercase",letterSpacing:"0.06em",marginTop:"auto"}}>😬 Inget pass</div>
+      </div>
+    );
   }
   const col=passColor(l.type);
   const feeling=l.feeling??2;
   return (
-    <div style={{background:col.bg,border:`1px solid ${col.border}`,borderRadius:8,padding:"10px 11px",display:"flex",flexDirection:"column",gap:3}}>
+    <div onClick={()=>onSelect&&onSelect(l)} style={{background:col.bg,border:`1px solid ${col.border}`,borderRadius:8,padding:"10px 11px",display:"flex",flexDirection:"column",gap:3,cursor:"pointer",transition:"box-shadow 0.15s"}}
+      onMouseEnter={e=>e.currentTarget.style.boxShadow=`0 2px 12px ${C.shadow}`}
+      onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.72rem",color:col.text}}>{l.type}</span>
         <span style={{fontSize:"0.9rem"}}>{FEELINGS[feeling]}</span>
       </div>
       <div style={{fontSize:"0.58rem",color:C.muted}}>{formatDate(l.date).slice(4)}</div>
-      {l.type==="ABC"&&l.sets&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.sets} set · {l.secPerSet}s · Dubbla 24 kg</div>}
-      {l.type==="Press"&&l.steges&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.steges.length} stegar · {totalPP(l)===0?"rent":totalPP(l)+"PP"} · {l.steges[0]?.two?.kg||"24"}kg</div>}
+      {schedPass&&(
+        <div style={{fontSize:"0.57rem",color:C.faint,lineHeight:1.4}}>Mål: {schedPass.detail} · {schedPass.weight}</div>
+      )}
+      {l.type==="ABC"&&l.sets&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>Utfall: {l.sets} set · {l.secPerSet}s · Dubbla 24 kg</div>}
+      {l.type==="Press"&&l.steges&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>Utfall: {l.steges.length} stegar · {totalPP(l)===0?"rent":totalPP(l)+"PP"} · {l.steges[0]?.two?.kg||"24"}kg</div>}
       {l.type==="WW"&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.wwKg||"?"}kg · {l.wwRounds?.length||0} ronder · {l.wwRounds?.filter(r=>r.length===5).length||0} kompletta</div>}
       {l.type==="Annat"&&l.otherTitle&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.otherTitle.slice(0,24)}</div>}
-      {l.bodyLog&&<div style={{fontSize:"0.58rem",color:C.orange,lineHeight:1.4}}>📝 {l.bodyLog.slice(0,45)}{l.bodyLog.length>45?"…":""}</div>}
+      {l.bodyLog&&<div style={{fontSize:"0.57rem",color:C.orange,lineHeight:1.4}}>📝 {l.bodyLog.slice(0,40)}{l.bodyLog.length>40?"…":""}</div>}
       {(l.prehabArms||l.prehabKnees)&&(
         <div style={{fontSize:"0.6rem",color:C.accent,fontWeight:600}}>{[l.prehabArms&&"💪 Armar",l.prehabKnees&&"🦵 Knän"].filter(Boolean).join(" · ")}</div>
       )}
-      {l.notes&&<div style={{fontSize:"0.57rem",color:C.muted,lineHeight:1.4,fontStyle:"italic"}}>{l.notes.slice(0,45)}{l.notes.length>45?"…":""}</div>}
-      {confirmId===l.id?(
-        <div style={{display:"flex",gap:4,marginTop:2}}>
-          <button onClick={()=>{deleteLog(l.id);setConfirmId(null);}} style={{background:"#fff0f0",border:"1px solid #f0b8b8",color:C.red,padding:"2px 8px",borderRadius:3,cursor:"pointer",fontSize:"0.6rem",touchAction:"manipulation"}}>Radera</button>
-          <button onClick={()=>setConfirmId(null)} style={{background:C.bg,border:`1px solid ${C.border}`,color:C.muted,padding:"2px 8px",borderRadius:3,cursor:"pointer",fontSize:"0.6rem",touchAction:"manipulation"}}>Avbryt</button>
-        </div>
-      ):(
-        <button onClick={()=>setConfirmId(l.id)} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.65rem",padding:"2px 0 0",alignSelf:"flex-end",touchAction:"manipulation"}}>✕</button>
-      )}
+      <div style={{fontSize:"0.52rem",color:C.faint,marginTop:2,fontStyle:"italic"}}>Tryck för detaljer →</div>
     </div>
   );
 }
@@ -891,6 +998,7 @@ function App() {
   const [loading,setLoading]=useState(true);
   const [dbError,setDbError]=useState(null);
   const [confirmId,setConfirmId]=useState(null);
+  const [selectedLog,setSelectedLog]=useState(null);
   const [passIndex,setPassIndex]=useState(0);
   // passOutcomes: map of globalPassIndex -> "done" | "missed"
   const [passOutcomes,setPassOutcomes]=useState({});
@@ -1040,6 +1148,7 @@ function App() {
 
   return (
     <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Mono','Courier New',monospace"}}>
+      {selectedLog&&<LogDetailModal l={selectedLog} onClose={()=>setSelectedLog(null)} deleteLog={deleteLog}/>}
       {dbError && (
         <div style={{background:"#fff0f0",borderBottom:"1px solid #f0b8b8",padding:"10px 20px",fontSize:"0.7rem",color:C.red,textAlign:"center"}}>
           ⚠️ {dbError}
@@ -1431,7 +1540,7 @@ function App() {
             )}
             <div className="history-card-mobile">
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
-              {logs.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
+              {logs.map(l=><LogCard key={l.id} l={l} onSelect={setSelectedLog} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
             </div>
             <div className="history-card-desktop">
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
@@ -1483,12 +1592,8 @@ function App() {
                   const [wFrom, wTo] = wkRanges[wi] || ["2099-01-01","2099-01-02"];
                   const weekLogs = logs.filter(l=>l.date>=wFrom&&l.date<=wTo);
                   weekLogs.forEach(l=>shownIds.add(l.id));
-                  if (weekLogs.length===0) return null;
-
-                  // Assign logs to pass slots by type
                   const weekPasses = week.passes.filter(Boolean);
-                  const assignedLogs = weekPasses.map(p=>weekLogs.find(l=>l.type===p.type&&!shownIds.has(l.id+'_used'))||weekLogs[0]||null);
-
+                  // Always show week row (even if no logs - shows missed slots)
                   return (
                     <div key={wi} className="history-week-row">
                       <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
@@ -1499,11 +1604,11 @@ function App() {
                       {weekPasses.map((p,pi)=>{
                         if(week.passes[pi]===null) return <div key={pi} style={{visibility:"hidden"}}/>;
                         const logged = weekLogs.find(l=>l.type===p.type) || null;
-                        return <LogCardCompact key={pi} l={logged} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
+                        return <LogCardCompact key={pi} l={logged} schedPass={p} onSelect={setSelectedLog} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
                       })}
                     </div>
                   );
-                }).filter(Boolean);
+                });
 
                 const unscheduled = logs.filter(l=>!shownIds.has(l.id));
                 return (
@@ -1513,7 +1618,7 @@ function App() {
                       <div style={{marginTop:12}}>
                         <div style={{fontSize:"0.65rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:C.accent,marginBottom:8,paddingBottom:6,borderBottom:`1px solid ${C.border}`}}>Övriga pass</div>
                         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                          {unscheduled.map(l=><LogCard key={l.id} l={l} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
+                          {unscheduled.map(l=><LogCard key={l.id} l={l} onSelect={setSelectedLog} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>)}
                         </div>
                       </div>
                     )}
