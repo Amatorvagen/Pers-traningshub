@@ -1599,36 +1599,6 @@ function App() {
               {loading&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Laddar...</p>}
               {!loading&&logs.length===0&&<p style={{color:C.muted,fontSize:"0.75rem"}}>Inga loggade pass ännu.</p>}
               {(()=>{
-                const shownIds = new Set();
-                // Sort logs by date descending
-                const sortedLogs = [...logs].sort((a,b)=>b.date.localeCompare(a.date));
-                // Build week date ranges from schedule
-                const weekRanges = WEEK_SCHEDULE.map((week,wi)=>{
-                  // Use hardcoded date ranges from week.dateRange label? No - use pass global index
-                  // Each week has 3 passes. Map logs by week index using passIndex ranges.
-                  const wStart = WEEK_SCHEDULE.slice(0,wi).reduce((s,w)=>s+w.passes.filter(Boolean).length,0);
-                  const wEnd = wStart + week.passes.filter(Boolean).length;
-                  return {wStart,wEnd};
-                });
-                // For each week, find logs that were logged during that week's timeframe
-                // Since we no longer have exact dates, match by type and chronological order
-                // Strategy: sort logs by date, assign to weeks greedily by type matching
-                const weekRows = WEEK_SCHEDULE.map((week,wi)=>{
-                  const weekPasses = week.passes.filter(Boolean);
-                  // Find logs matching each pass type in order, not already shown
-                  const weekLogs = weekPasses.map(p=>{
-                    const match = sortedLogs.find(l=>
-                      !shownIds.has(l.id) && l.type===p.type
-                    );
-                    // Only assign if log is within reasonable time (we have no date constraint now)
-                    // Just take the next unshown log of matching type, oldest first per week
-                    return null; // Skip type-based matching - too unreliable
-                  });
-                  return null; // Will use date-based approach below
-                }).filter(Boolean);
-
-                // Better approach: group all logs by week based on their actual dates
-                // Week date ranges (hardcoded to match schedule):
                 const wkRanges = [
                   ["2026-03-30","2026-04-06"], // V1
                   ["2026-04-07","2026-04-13"], // V2
@@ -1642,14 +1612,23 @@ function App() {
                 ];
 
                 const today = todayStr();
+                const shownIds = new Set();
+
                 const weekRowsReal = WEEK_SCHEDULE.map((week,wi)=>{
                   const [wFrom, wTo] = wkRanges[wi] || ["2099-01-01","2099-01-02"];
-                  // Only show weeks that have started (wFrom <= today)
                   if (wFrom > today) return null;
-                  const weekLogs = logs.filter(l=>l.date>=wFrom&&l.date<=wTo);
+
+                  // Get all logs this week, sorted chronologically
+                  const weekLogs = [...logs]
+                    .filter(l=>l.date>=wFrom&&l.date<=wTo)
+                    .sort((a,b)=>a.date.localeCompare(b.date));
                   weekLogs.forEach(l=>shownIds.add(l.id));
+
                   const weekPasses = week.passes.filter(Boolean);
-                  // Always show week row (even if no logs - shows missed slots)
+                  // Assign logs to slots chronologically - slot 0 gets earliest log, slot 1 next, etc.
+                  // Don't filter by type - show whatever was actually logged that week
+                  const assignedLogs = weekPasses.map((_,pi)=>weekLogs[pi]||null);
+
                   return (
                     <div key={wi} className="history-week-row">
                       <div style={{display:"flex",flexDirection:"column",paddingTop:6}}>
@@ -1659,13 +1638,14 @@ function App() {
                       </div>
                       {weekPasses.map((p,pi)=>{
                         if(week.passes[pi]===null) return <div key={pi} style={{visibility:"hidden"}}/>;
-                        const logged = weekLogs.find(l=>l.type===p.type) || null;
+                        const logged = assignedLogs[pi];
                         return <LogCardCompact key={pi} l={logged} schedPass={p} onSelect={setSelectedLog} confirmId={confirmId} setConfirmId={setConfirmId} deleteLog={deleteLog}/>;
                       })}
                     </div>
                   );
                 });
 
+                // Show any logs not in a weekly slot (older than program start, etc.)
                 const unscheduled = logs.filter(l=>!shownIds.has(l.id));
                 return (
                   <>
