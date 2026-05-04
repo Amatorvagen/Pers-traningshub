@@ -148,6 +148,7 @@ function emptyStege() {
     three: {kg:"24",pp:0},
     five:  {kg:"20",pp:0,split:""},
     ten:   {kg:"16",pp:0,split:""},
+    showTen: false,
   };
 }
 
@@ -319,9 +320,24 @@ function StegeCell({s, idx, totalSteges, onUpdate, onRemove}) {
           onKg={v=>upd("three","kg",v)} onPP={v=>upd("three","pp",v)}/>
         <RepCell label="5 reps" kg={s.five?.kg||"20"} pp={s.five?.pp||0} maxReps={5}
           onKg={v=>upd("five","kg",v)} onPP={v=>upd("five","pp",v)}/>
-        <RepCell label="10 reps" kg={s.ten?.kg||"16"} pp={s.ten?.pp||0} maxReps={10}
-          split={s.ten?.split||""} showSplit
-          onKg={v=>upd("ten","kg",v)} onPP={v=>upd("ten","pp",v)} onSplit={v=>upd("ten","split",v)}/>
+        <div>
+          {s.showTen ? (
+            <RepCell label="10 reps" kg={s.ten?.kg||"16"} pp={s.ten?.pp||0} maxReps={10}
+              split={s.ten?.split||""} showSplit
+              onKg={v=>upd("ten","kg",v)} onPP={v=>upd("ten","pp",v)} onSplit={v=>upd("ten","split",v)}/>
+          ) : (
+            <button onClick={()=>onUpdate(idx,"showTen","",true)} style={{
+              width:"100%",height:"100%",minHeight:80,
+              background:C.bg,border:`1px dashed ${C.border2}`,
+              color:C.faint,borderRadius:7,cursor:"pointer",
+              fontSize:"0.65rem",fontFamily:"inherit",touchAction:"manipulation",
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
+            }}>
+              <span style={{fontSize:"1rem"}}>＋</span>
+              <span>10 reps</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -623,12 +639,20 @@ function TimerView() {
   );
 }
 
-function SettingsView({logs,passIndex,onImport}) {
+function SettingsView({logs,passIndex,onImport,goals,onSaveGoals}) {
   const [importText,setImportText]=useState("");
   const [importStatus,setImportStatus]=useState(null);
   const [copied,setCopied]=useState(false);
   const [showBackup,setShowBackup]=useState(false);
+  const [localGoals,setLocalGoals]=useState(goals);
+  const [goalsSaved,setGoalsSaved]=useState(false);
   const backupText=JSON.stringify({logs,passIndex,exportedAt:new Date().toISOString()});
+
+  async function handleSaveGoals() {
+    await onSaveGoals(localGoals);
+    setGoalsSaved(true);
+    setTimeout(()=>setGoalsSaved(false),2000);
+  }
 
   function handleCopy() {
     navigator.clipboard.writeText(backupText).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2500);}).catch(()=>{
@@ -651,6 +675,60 @@ function SettingsView({logs,passIndex,onImport}) {
   const btnStyle={background:C.bg,border:`1px solid ${C.border2}`,color:C.muted,padding:"8px 16px",borderRadius:6,cursor:"pointer",fontFamily:"inherit",fontSize:"0.8rem",touchAction:"manipulation"};
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+      {/* ── MÅL ── */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+        <div style={labelStyle}>Mål & Progression</div>
+        <p style={{fontSize:"0.65rem",color:C.muted,margin:"8px 0 14px",lineHeight:1.7}}>Justera målen för programmet. Sparas till Supabase.</p>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600}}>ABC – slutmål</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div>
+              <label style={{display:"block",fontSize:"0.6rem",color:C.muted,marginBottom:5,fontWeight:600}}>Mål set</label>
+              <input type="number" value={localGoals.abcTargetSets} onChange={e=>setLocalGoals({...localGoals,abcTargetSets:Number(e.target.value)})} style={{...IS,width:"100%"}}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:"0.6rem",color:C.muted,marginBottom:5,fontWeight:600}}>Mål sek/set</label>
+              <input type="number" value={localGoals.abcTargetSec} onChange={e=>setLocalGoals({...localGoals,abcTargetSec:Number(e.target.value)})} style={{...IS,width:"100%"}}/>
+            </div>
+          </div>
+          <div style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginTop:4}}>Press – standardvikter</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {[["2 reps","press2kg"],["3 reps","press3kg"],["5 reps","press5kg"],["10 reps","press10kg"]].map(([label,key])=>(
+              <div key={key}>
+                <label style={{display:"block",fontSize:"0.6rem",color:C.muted,marginBottom:5,fontWeight:600}}>{label}</label>
+                <div style={{display:"flex",gap:4}}>
+                  {["16","20","24"].map(w=>(
+                    <button key={w} onClick={()=>setLocalGoals({...localGoals,[key]:w})} style={{
+                      flex:1,padding:"6px 0",borderRadius:5,cursor:"pointer",
+                      background:localGoals[key]===w?C.accentLight:C.bg,
+                      border:`1px solid ${localGoals[key]===w?C.accent:C.border}`,
+                      color:localGoals[key]===w?C.accent:C.muted,
+                      fontSize:"0.7rem",fontFamily:"inherit",fontWeight:localGoals[key]===w?700:400,
+                      touchAction:"manipulation",
+                    }}>{w}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginTop:4}}>Programinfo</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div>
+              <label style={{display:"block",fontSize:"0.6rem",color:C.muted,marginBottom:5,fontWeight:600}}>Program</label>
+              <input type="text" value={localGoals.programName} onChange={e=>setLocalGoals({...localGoals,programName:e.target.value})} style={{...IS,width:"100%"}}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:"0.6rem",color:C.muted,marginBottom:5,fontWeight:600}}>Mål-datum</label>
+              <input type="text" value={localGoals.goalDate} onChange={e=>setLocalGoals({...localGoals,goalDate:e.target.value})} placeholder="31 dec 2026" style={{...IS,width:"100%"}}/>
+            </div>
+          </div>
+          <button onClick={handleSaveGoals} style={{background:goalsSaved?C.accentMid:C.accent,border:"none",color:"#fff",padding:"10px 18px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.8rem",touchAction:"manipulation"}}>
+            {goalsSaved?"✓ Sparat!":"Spara mål"}
+          </button>
+        </div>
+      </div>
+
       <div style={cardStyle}>
         <div style={labelStyle}>Säkerhetskopia</div>
         <p style={{fontSize:"0.7rem",color:C.muted,margin:"8px 0 12px",lineHeight:1.7}}>Backup om något går fel. Supabase är primär lagring.</p>
@@ -1059,6 +1137,11 @@ function App() {
   const [confirmId,setConfirmId]=useState(null);
   const [selectedLog,setSelectedLog]=useState(null);
   const [passIndex,setPassIndex]=useState(0);
+  const [goals,setGoals]=useState({
+    abcTargetSets:23, abcTargetSec:78,
+    press2kg:"24", press3kg:"24", press5kg:"20", press10kg:"16",
+    programName:"ABF", goalDate:"31 dec 2026",
+  });
   // passOutcomes: map of globalPassIndex -> "done" | "missed"
   const [passOutcomes,setPassOutcomes]=useState({});
   const [quote]=useState(()=>QUOTES[Math.floor(Math.random()*QUOTES.length)]);
@@ -1067,18 +1150,18 @@ function App() {
   useEffect(()=>{
     async function load() {
       try {
-        const [fetchedLogs, idxVal, draftVal, outcomesVal] = await Promise.all([
+        const [fetchedLogs, idxVal, draftVal, outcomesVal, goalsVal] = await Promise.all([
           dbLoadLogs(),
           dbLoadState("pass-index"),
           dbLoadState(DRAFT_KEY),
           dbLoadState("pass-outcomes"),
+          dbLoadState("goals"),
         ]);
         setLogs(fetchedLogs);
         if (idxVal !== null) setPassIndex(Number(idxVal));
         if (draftVal) {
           try {
             const draft = JSON.parse(draftVal);
-            // Ensure wwRounds always has at least one round
             if (!draft.wwRounds || draft.wwRounds.length === 0) draft.wwRounds = [[]];
             setForm(draft);
           } catch(e) {}
@@ -1091,6 +1174,7 @@ function App() {
             setPassOutcomes(fixed);
           } catch(e) {}
         }
+        if (goalsVal) { try { setGoals(g=>({...g,...JSON.parse(goalsVal)})); } catch(e) {} }
       } catch(e) {
         setDbError("Databasfel: " + e.message);
       }
@@ -1122,6 +1206,11 @@ function App() {
       setTimeout(()=>setSaved(false),2000);
       setView("history");
     } catch(e) { alert("Kunde inte spara passet: "+e.message); }
+  }
+
+  async function saveGoals(g) {
+    setGoals(g);
+    try { await dbSaveState("goals", JSON.stringify(g)); } catch(e) { console.error(e); }
   }
 
   async function deleteLog(id) {
@@ -1261,48 +1350,58 @@ function App() {
 
               <div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:10,padding:"14px 16px"}}>
                 <div style={{...labelStyle,color:C.accentMid}}>Nästa pass</div>
-                {nextPass?(
-                  <>
-                    <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>
-                      {nextPass.type} · {nextPass.pass} · {nextPass.weight}
-                    </div>
-                    <div style={{background:"rgba(255,255,255,0.6)",borderRadius:7,padding:"10px 12px",marginBottom:10}}>
-                      {nextPass.weight&&(
-                        <div style={{display:"flex",gap:8,alignItems:"baseline",marginBottom:5}}>
-                          <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,width:64,flexShrink:0,fontWeight:600}}>Vikt</span>
-                          <span style={{fontSize:"0.72rem",color:C.accent,fontWeight:700}}>{nextPass.weight}</span>
-                        </div>
-                      )}
-                      <div style={{display:"flex",gap:8,alignItems:"baseline",marginBottom:5}}>
-                        <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,width:64,flexShrink:0,fontWeight:600}}>Mål</span>
-                        <span style={{fontSize:"0.72rem",color:C.text}}>{nextPass.detail}</span>
+                {nextPass?(()=>{
+                  // Calculate week number and total weeks
+                  const totalWeeks = WEEK_SCHEDULE.filter(w=>w.phase!=="→ Giant").length;
+                  let weekNum=1, weekObj=null;
+                  let idx=0;
+                  for(let wi=0;wi<WEEK_SCHEDULE.length;wi++){
+                    const w=WEEK_SCHEDULE[wi];
+                    for(let pi=0;pi<w.passes.filter(Boolean).length;pi++){
+                      if(idx===passIndex){weekNum=wi+1;weekObj=w;break;}
+                      idx++;
+                    }
+                    if(weekObj) break;
+                  }
+                  const rowStyle={display:"flex",gap:8,alignItems:"baseline",marginBottom:4};
+                  const labelCol={fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.muted,width:64,flexShrink:0,fontWeight:600};
+                  const valStyle={fontSize:"0.72rem",color:C.text,fontWeight:500};
+                  return (
+                    <>
+                      <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>
+                        {nextPass.type} · {nextPass.pass} · V{weekNum} av {totalWeeks}
+                        {weekObj&&<span style={{fontSize:"0.6rem",fontWeight:400,color:C.accentMid,marginLeft:8}}>{weekObj.dateRange}</span>}
                       </div>
-                      {nextPass.type==="Press"&&(
-                        <div style={{display:"flex",gap:8,alignItems:"baseline"}}>
-                          <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,width:64,flexShrink:0,fontWeight:600}}>Stege</span>
-                          <div style={{fontSize:"0.72rem",color:C.muted,lineHeight:1.9}}>
-                            <div>2 reps @ 24 kg</div>
-                            <div>3 reps @ 24 kg</div>
-                            <div>5 reps @ 20 kg</div>
-                          </div>
+                      <div style={{background:"rgba(255,255,255,0.6)",borderRadius:7,padding:"10px 12px",marginBottom:10}}>
+                        <div style={rowStyle}>
+                          <span style={labelCol}>Vikt</span>
+                          <span style={valStyle}>{nextPass.weight}</span>
                         </div>
-                      )}
-                      {nextPass.type==="ABC"&&(
-                        <div style={{display:"flex",gap:8,alignItems:"baseline"}}>
-                          <span style={{fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.accentMid,width:64,flexShrink:0,fontWeight:600}}>Rörelser</span>
-                          <div style={{fontSize:"0.72rem",color:C.muted,lineHeight:1.9}}>
-                            <div>2 cleans + 1 press + 3 squats</div>
-                          </div>
+                        <div style={rowStyle}>
+                          <span style={labelCol}>Mål</span>
+                          <span style={valStyle}>{nextPass.detail}</span>
                         </div>
-                      )}
-                    </div>
-                    <p style={{fontSize:"0.68rem",color:C.accent,fontStyle:"italic",lineHeight:1.6,marginBottom:12}}>"{quote}"</p>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      <button onClick={()=>setView("log")} style={{background:C.accent,border:"none",color:"#fff",padding:"10px 20px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.8rem",touchAction:"manipulation"}}>Logga pass →</button>
-                      <button onClick={()=>advancePass("done")} style={{background:"transparent",border:`2px solid ${C.accentMid}`,color:C.accent,padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",fontSize:"0.7rem",fontWeight:600,touchAction:"manipulation"}}>Hoppa över</button>
-                    </div>
-                  </>
-                ):(
+                        {nextPass.type==="Press"&&(
+                          <div style={rowStyle}>
+                            <span style={labelCol}>Stege</span>
+                            <span style={valStyle}>2r @ 24 kg · 3r @ 24 kg · 5r @ 20 kg · 10r @ 16 kg</span>
+                          </div>
+                        )}
+                        {nextPass.type==="ABC"&&(
+                          <div style={rowStyle}>
+                            <span style={labelCol}>Rörelser</span>
+                            <span style={valStyle}>2 cleans + 1 press + 3 squats / set</span>
+                          </div>
+                        )}
+                      </div>
+                      <p style={{fontSize:"0.68rem",color:C.accent,fontStyle:"italic",lineHeight:1.6,marginBottom:12}}>"{quote}"</p>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                        <button onClick={()=>setView("log")} style={{background:C.accent,border:"none",color:"#fff",padding:"10px 20px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.8rem",touchAction:"manipulation"}}>Logga pass →</button>
+                        <button onClick={()=>advancePass("done")} style={{background:"transparent",border:`2px solid ${C.accentMid}`,color:C.accent,padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",fontSize:"0.7rem",fontWeight:600,touchAction:"manipulation"}}>Hoppa över</button>
+                      </div>
+                    </>
+                  );
+                })():(
                   <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>Alla pass klara! 🎯</div>
                 )}
               </div>
@@ -1449,7 +1548,12 @@ function App() {
                 {form.steges.map((s,idx)=>(
                   <StegeCell key={idx} s={s} idx={idx} totalSteges={form.steges.length}
                     onUpdate={(i,col,field,val)=>{
-                      const steges=form.steges.map((st,j)=>j!==i?st:{...st,[col]:{...st[col],[field]:val}});
+                      const steges=form.steges.map((st,j)=>{
+                        if(j!==i) return st;
+                        // showTen is a top-level stege field, not nested
+                        if(col==="showTen") return {...st,showTen:true};
+                        return {...st,[col]:{...st[col],[field]:val}};
+                      });
                       setForm({...form,steges});
                     }}
                     onRemove={()=>setForm({...form,steges:form.steges.filter((_,i)=>i!==idx)})}
@@ -1683,7 +1787,7 @@ function App() {
           </div>
         )}
 
-        {view==="settings"&&<SettingsView logs={logs} passIndex={passIndex} onImport={handleImport}/>}
+        {view==="settings"&&<SettingsView logs={logs} passIndex={passIndex} onImport={handleImport} goals={goals} onSaveGoals={saveGoals}/>}
       </div>
     </div>
   );
