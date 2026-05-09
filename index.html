@@ -1321,7 +1321,8 @@ function App() {
 
   async function handleSubmit() {
     if (!form.date||!form.type) return;
-    const entry={...form,id:Date.now()};
+    // Preserve existing id if editing, otherwise create new
+    const entry={...form, id: form.id || Date.now()};
     try {
       await dbSaveLog(entry);
       const nl=[entry,...logs].sort((a,b)=>b.date.localeCompare(a.date));
