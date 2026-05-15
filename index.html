@@ -181,7 +181,7 @@ return {...entry, id: r.id, date: r.date};
 }
 async function dbSaveLog(entry) {
 const {id, date, ...data} = entry;
-const {error} = await sb.from("training_logs").upsert({id, date, data:{...data,id,date}});
+const {error} = await sb.from("training_logs").upsert({id, date, data:{...data,id,date}},{onConflict:"id"});
 if (error) throw error;
 }
 async function dbDeleteLog(id) {
@@ -286,7 +286,7 @@ touchAction:"manipulation",
 <input
 placeholder={split?"":"dela? t.ex. 6×20+4×16"}
 value={split||""}
-onChange={e=>{onSplit(e.target.value);if(e.target.value)onPP(0);}}
+onChange={e=>onSplit(e.target.value)}
 style={{...IS,fontSize:"0.6rem",padding:"3px 6px",borderRadius:4}}
 />
 )}
@@ -1664,12 +1664,14 @@ return <button key={t} onClick={()=>setForm({...form,type:t,wwRounds:t==="WW"&&f
 {form.steges.map((s,idx)=>(
 <StegeCell key={idx} s={s} idx={idx} totalSteges={form.steges.length}
 onUpdate={(i,col,field,val)=>{
-const steges=form.steges.map((st,j)=>{
+setForm(prev=>{
+const steges=prev.steges.map((st,j)=>{
 if(j!==i) return st;
 if(col==="showTen") return {...st,showTen:true};
 return {...st,[col]:{...st[col],[field]:val}};
 });
-setForm({...form,steges});
+return {...prev,steges};
+});
 }}
 onRemove={()=>setForm({...form,steges:form.steges.filter((_,i)=>i!==idx)})}
 />
