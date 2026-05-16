@@ -126,6 +126,111 @@ null,
 
 const ALL_PASSES = WEEK_SCHEDULE.flatMap(w => w.passes.filter(Boolean));
 
+// ── ÅRSPLAN – PROGRAMDATA ──
+const PROGRAM_PLAN = [
+{
+id:"abf1",
+label:"ABF",
+fullName:"Armor Building Formula",
+author:"Dan John",
+period:"Mar–Maj 2026",
+dateRange:"2026-03-30",
+dateEnd:"2026-05-31",
+active:true,
+color:"abc",
+icon:"🏋️",
+duration:"9 veckor · 25 pass",
+movement:"Clean & Press + ABC-komplex",
+weight:"Dubbla 24 kg",
+structure:"Press-pass (stegar 2·3·5·10) + ABC-pass (2 cleans + 1 press + 3 squats, EMOM/intervall)",
+startGoal:"10 set ABC @ 90 sek · Press 5–6 stegar",
+endGoal:"23 set ABC @ 78 sek (= 30 min EMOM) · Press 10 stegar 100 reps",
+progression:"Öka 1 set/ABC-pass · Minska PP mot rent press",
+notes:"Grunden för December-målet. Motor + styrka parallellt.",
+},
+{
+id:"giant",
+label:"Giant 3.0",
+fullName:"The Giant 3.0",
+author:"Geoff Neupert",
+period:"Jun–Jul 2026",
+dateRange:"2026-06-01",
+dateEnd:"2026-07-31",
+active:false,
+color:"press",
+icon:"💪",
+duration:"4–8 veckor · 3 pass/vecka",
+movement:"Double Clean & Press",
+weight:"Dubbla 24 kg (5RM)",
+structure:"20–30 min AMRAP · Day 1: sets om 2 · Day 2: sets om 3 · Day 3: sets om 1 · Vila efter behov",
+startGoal:"Så många set som möjligt @ 5RM-vikt (24 kg)",
+endGoal:"Gör 5RM-vikten (24 kg) lätt · Retest 5RM efter cykeln",
+progression:"+1 set/vecka som riktlinje · Autoregulerat vila",
+notes:"Bygger pressstyrka och kondition. 5RM med 24 kg ska kännas trivialt till juli. Direkt brygga till ABF runda 2.",
+},
+{
+id:"abf2",
+label:"ABF",
+fullName:"Armor Building Formula (runda 2)",
+author:"Dan John",
+period:"Aug–Sep 2026",
+dateRange:"2026-08-01",
+dateEnd:"2026-09-30",
+active:false,
+color:"abc",
+icon:"🔁",
+duration:"8 veckor · 24 pass",
+movement:"Clean & Press + ABC-komplex",
+weight:"Dubbla 24 kg",
+structure:"Samma struktur som ABF runda 1 – Press-pass + ABC-pass",
+startGoal:"Utgångspunkt från Giant 3.0-utgång · ABC-baseline noteras v1",
+endGoal:"Maxera antal ABC-set @ 78 sek · Pressa mot 30 set",
+progression:"Samma progressionsregler som ABF 1 · Högre startpunkt förväntas",
+notes:"Densitetsfokus. Volymen är redan byggd – nu handlar det om att pressa ner sekundrarna.",
+},
+{
+id:"kck",
+label:"KCK",
+fullName:"King Sized Killer 2.0",
+author:"Dan John",
+period:"Okt–Nov 2026",
+dateRange:"2026-10-01",
+dateEnd:"2026-11-30",
+active:false,
+color:"ww",
+icon:"🎯",
+duration:"8 veckor · 3 pass/vecka",
+movement:"Snatch (enkel kettlebell)",
+weight:"20 kg (tung-ish) · uppvärm 16 kg",
+structure:"20 min AMRAP · Sets om 5 reps · Vila efter behov · Byt hand efter varje set",
+startGoal:"Etablera baseline antal set @ 20 kg / 20 min",
+endGoal:"Maximera antal set · Motor och återhämtning för December-push",
+progression:"Fler set per 20-min-session över tid · Minska vilotid",
+notes:"Rörelsebrott från clean & press. Snatch belastar axeln annorlunda och bygger kondition. Viktigt: teknik prioriteras – 20 kg är rätt nivå, 24 kg är för tidigt.",
+},
+{
+id:"goal",
+label:"🎯 30 EMOM",
+fullName:"Decembermål: 30 ABC EMOM",
+author:"",
+period:"Dec 2026",
+dateRange:"2026-12-01",
+dateEnd:"2026-12-31",
+active:false,
+color:"other",
+icon:"🏆",
+duration:"Målförsök 31 dec 2026",
+movement:"ABC: 2 cleans + 1 press + 3 squats",
+weight:"Dubbla 24 kg",
+structure:"EMOM = 1 set per minut · 30 set = exakt 30 minuter · Noll pauser",
+startGoal:"Kom in med stark motor från KCK · ABC-teknik på autopilot",
+endGoal:"30 ABC EMOM dubbla 24 kg – klart innan nyår",
+progression:"Inga kompromisser. Antingen klarar du alla 30 set EMOM eller inte.",
+notes:"Hela årets progression bygger mot detta. Köp 28 kg när det är klart.",
+},
+];
+
+
 function passColor(type) {
 if (type==="Övergång") return {bg:C.surfaceAlt,border:C.border,text:C.muted};
 if (type==="Press")   return {bg:C.press,border:C.pressBorder,text:C.pressText};
@@ -463,6 +568,66 @@ function Empty({text}) {
 return (
 <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"20px 16px",textAlign:"center"}}>
 <p style={{fontSize:"0.7rem",color:C.faint}}>{text}</p>
+</div>
+);
+}
+
+// ── PROGRAM MODAL ──
+function ProgramModal({prog, onClose}) {
+if (!prog) return null;
+const col = passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":"");
+const rowStyle = {display:"flex",flexDirection:"column",gap:3,paddingBottom:10,borderBottom:`1px solid ${C.border}`,marginBottom:10};
+const lbl = {fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:2};
+const val = {fontSize:"0.72rem",color:C.text,lineHeight:1.6};
+return (
+<div onClick={onClose} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(58,32,16,0.5)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+<div onClick={e=>e.stopPropagation()} style={{background:C.surface,borderRadius:"14px 14px 0 0",padding:"22px 20px 48px",width:"100%",maxWidth:680,maxHeight:"88vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(0,0,0,0.2)"}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+<div>
+<div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+<span style={{fontSize:"1.4rem"}}>{prog.icon}</span>
+<span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1.1rem",background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"3px 12px",borderRadius:6}}>{prog.label}</span>
+</div>
+<div style={{fontSize:"0.68rem",color:C.muted,marginTop:2}}>{prog.fullName}{prog.author?" · "+prog.author:""}</div>
+<div style={{fontSize:"0.62rem",color:C.accent,fontWeight:600,marginTop:2}}>{prog.period}</div>
+</div>
+<button onClick={onClose} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"1.4rem",padding:0,touchAction:"manipulation"}}>✕</button>
+</div>
+
+<div style={{background:col.bg,border:`1px solid ${col.border}`,borderRadius:8,padding:"10px 14px",marginBottom:16}}>
+<div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+<div><div style={lbl}>Varaktighet</div><div style={{...val,color:col.text,fontWeight:600}}>{prog.duration}</div></div>
+<div><div style={lbl}>Vikt</div><div style={{...val,color:col.text,fontWeight:600}}>{prog.weight}</div></div>
+<div><div style={lbl}>Rörelse</div><div style={{...val,color:col.text,fontWeight:600}}>{prog.movement}</div></div>
+</div>
+</div>
+
+<div style={rowStyle}>
+<div style={lbl}>Struktur</div>
+<div style={val}>{prog.structure}</div>
+</div>
+<div style={rowStyle}>
+<div style={lbl}>Startmål</div>
+<div style={{...val,color:C.muted}}>{prog.startGoal}</div>
+</div>
+<div style={rowStyle}>
+<div style={lbl}>Slutmål</div>
+<div style={{...val,fontWeight:600,color:C.accent}}>{prog.endGoal}</div>
+</div>
+<div style={rowStyle}>
+<div style={lbl}>Progression</div>
+<div style={val}>{prog.progression}</div>
+</div>
+{prog.notes&&(
+<div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:8,padding:"10px 14px"}}>
+<div style={{...lbl,color:C.accentMid}}>Noteringar</div>
+<div style={{fontSize:"0.68rem",color:C.accent,lineHeight:1.7,marginTop:4}}>{prog.notes}</div>
+</div>
+)}
+<button onClick={onClose} style={{width:"100%",marginTop:16,background:C.accent,border:"none",color:"#fff",padding:"12px",borderRadius:8,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.85rem",touchAction:"manipulation"}}>
+Stäng
+</button>
+</div>
 </div>
 );
 }
@@ -919,6 +1084,58 @@ touchAction:"manipulation",
 </div>
 </div>
 
+<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+<div style={labelStyle}>Årsplan & Programmål</div>
+<p style={{fontSize:"0.65rem",color:C.muted,margin:"8px 0 14px",lineHeight:1.7}}>Alla program 2026 – mål och progression.</p>
+{PROGRAM_PLAN.map((prog,i)=>{
+const col=passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":"");
+const [open,setOpen]=React.useState(false);
+return (
+<div key={i} style={{marginBottom:8,border:`1px solid ${open?col.border:C.border}`,borderRadius:8,overflow:"hidden"}}>
+<button onClick={()=>setOpen(!open)} style={{
+width:"100%",background:open?col.bg:C.bg,border:"none",
+padding:"10px 14px",cursor:"pointer",touchAction:"manipulation",
+display:"flex",justifyContent:"space-between",alignItems:"center",
+}}>
+<div style={{display:"flex",gap:8,alignItems:"center"}}>
+<span style={{fontSize:"1rem"}}>{prog.icon}</span>
+<div style={{textAlign:"left"}}>
+<div style={{fontSize:"0.72rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:open?col.text:C.text}}>{prog.label} – {prog.period}</div>
+<div style={{fontSize:"0.58rem",color:C.faint}}>{prog.duration} · {prog.weight}</div>
+</div>
+</div>
+<span style={{fontSize:"0.7rem",color:C.faint}}>{open?"▲":"▼"}</span>
+</button>
+{open&&(
+<div style={{padding:"12px 14px",background:col.bg,borderTop:`1px solid ${col.border}`}}>
+<div style={{display:"flex",flexDirection:"column",gap:8}}>
+<div>
+<div style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:2}}>Struktur</div>
+<div style={{fontSize:"0.68rem",color:C.text,lineHeight:1.6}}>{prog.structure}</div>
+</div>
+<div>
+<div style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:2}}>Startmål</div>
+<div style={{fontSize:"0.68rem",color:C.muted,lineHeight:1.6}}>{prog.startGoal}</div>
+</div>
+<div style={{background:"rgba(255,255,255,0.5)",borderRadius:6,padding:"8px 10px"}}>
+<div style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:col.text,fontWeight:600,marginBottom:2}}>Slutmål 🎯</div>
+<div style={{fontSize:"0.72rem",color:col.text,fontWeight:600,lineHeight:1.6}}>{prog.endGoal}</div>
+</div>
+<div>
+<div style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:2}}>Progression</div>
+<div style={{fontSize:"0.68rem",color:C.muted,lineHeight:1.6}}>{prog.progression}</div>
+</div>
+{prog.notes&&(
+<div style={{fontSize:"0.65rem",color:col.text,fontStyle:"italic",lineHeight:1.6,borderTop:`1px solid ${col.border}`,paddingTop:8}}>{prog.notes}</div>
+)}
+</div>
+</div>
+)}
+</div>
+);
+})}
+</div>
+
 <div style={cardStyle}>
 <div style={labelStyle}>Exportera till Claude</div>
 <p style={{fontSize:"0.7rem",color:C.muted,margin:"8px 0 12px",lineHeight:1.7}}>
@@ -1262,6 +1479,7 @@ programName:"ABF", goalDate:"31 dec 2026",
 });
 const [passOutcomes,setPassOutcomes]=useState({});
 const [quote]=useState(()=>QUOTES[Math.floor(Math.random()*QUOTES.length)]);
+const [selectedProgram,setSelectedProgram]=useState(null);
 const draftTimerRef = useRef(null);
 
 useEffect(()=>{
@@ -1416,6 +1634,7 @@ const allWithFeeling = allLogsSorted.filter(l=>l.feeling!=null);
 return (
 <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"'DM Mono','Courier New',monospace"}}>
 {selectedLog&&<LogDetailModal l={selectedLog} onClose={()=>setSelectedLog(null)} onEdit={(l)=>{setForm({...l,wwRounds:l.wwRounds?.length>0?l.wwRounds:[[]]});setView("log");}} deleteLog={deleteLog}/>}
+{selectedProgram&&<ProgramModal prog={selectedProgram} onClose={()=>setSelectedProgram(null)}/>}
 {dbError && (
 <div style={{background:"#fff0f0",borderBottom:"1px solid #f0b8b8",padding:"10px 20px",fontSize:"0.7rem",color:C.red,textAlign:"center"}}>
 ⚠️ {dbError}
@@ -1455,14 +1674,30 @@ return (
 </div>
 )}
 <div style={cardStyle}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
 <div style={labelStyle}>Årsplan 2026</div>
-<div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
-{[{label:"ABF",period:"Mar–Maj",active:true},{label:"Giant 3.0",period:"Jun–Jul"},{label:"ABF",period:"Aug–Sep"},{label:"KCK",period:"Okt–Nov"},{label:"🎯 30 EMOM",period:"Dec"}].map((s,i)=>(
-<div key={i} style={{background:s.active?C.accentLight:C.bg,border:`1px solid ${s.active?C.accent:C.border}`,borderRadius:6,padding:"5px 10px"}}>
-<div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:s.active?C.accent:C.muted}}>{s.label}</div>
-<div style={{fontSize:"0.55rem",color:s.active?C.accentMid:C.faint,letterSpacing:"0.06em"}}>{s.period}</div>
+<div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.06em"}}>tryck för detaljer</div>
 </div>
-))}
+<div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+{PROGRAM_PLAN.map((prog,i)=>{
+const today=todayStr();
+const isPast=prog.dateEnd<today&&!prog.active;
+const isCurrent=prog.active||(prog.dateRange<=today&&prog.dateEnd>=today);
+const col=passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":"");
+return (
+<button key={i} onClick={()=>setSelectedProgram(prog)} style={{
+background:isCurrent?C.accentLight:isPast?"#eef8ee":C.bg,
+border:`1px solid ${isCurrent?C.accent:isPast?"#90c890":C.border}`,
+borderRadius:7,padding:"7px 11px",cursor:"pointer",
+textAlign:"left",touchAction:"manipulation",
+}}>
+<div style={{fontSize:"0.72rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:isCurrent?C.accent:isPast?"#2a6a2a":C.muted}}>{prog.icon} {prog.label}</div>
+<div style={{fontSize:"0.55rem",color:isCurrent?C.accentMid:isPast?"#4a8a4a":C.faint,letterSpacing:"0.06em",marginTop:1}}>{prog.period}</div>
+{isPast&&<div style={{fontSize:"0.5rem",color:"#4a8a4a",marginTop:1}}>✅ Klar</div>}
+{isCurrent&&<div style={{fontSize:"0.5rem",color:C.accent,marginTop:1}}>▶ Pågår</div>}
+</button>
+);
+})}
 </div>
 </div>
 
