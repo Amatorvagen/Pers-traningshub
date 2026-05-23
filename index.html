@@ -251,10 +251,10 @@ return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
 function todayStr() { return new Date().toISOString().split("T")[0]; }
 function emptyStege() {
 return {
-two:   {kg:"24",pp:0},
-three: {kg:"24",pp:0},
-five:  {kg:"20",pp:0,split:""},
-ten:   {kg:"16",pp:0,split:""},
+two:   {kg:"24",pp:0,done:false},
+three: {kg:"24",pp:0,done:false},
+five:  {kg:"20",pp:0,split:"",done:false},
+ten:   {kg:"16",pp:0,split:"",done:false},
 showTen: false,
 };
 }
@@ -276,7 +276,12 @@ const GIANT_REPS = {"1":2,"2":3,"3":1};
 function totalPP(log) {
 if (!log.steges) return 0;
 return log.steges.reduce((sum,s)=>
-sum+(s.two?.pp||0)+(s.three?.pp||0)+(s.five?.pp||0)+(s.ten?.pp||0),0);
+sum+(s.two?.pp||0)+(s.three?.pp||0)+(s.five?.pp||0)+((s.showTen&&s.ten?.pp)||0),0);
+}
+
+// Antal rena/gjorda reps (exkl. 10-stegen om den inte lagts till)
+function stegeIsDone(s) {
+return (s.two?.done||false)||(s.three?.done||false)||(s.five?.done||false)||(s.showTen&&(s.ten?.done||false));
 }
 
 // ── SUPABASE ──
@@ -352,21 +357,65 @@ style={{width:"100%",accentColor:accent,cursor:"pointer"}} />
 );
 }
 
-const ppBtn = {
-background:C.bg,border:`1px solid ${C.border2}`,color:C.muted,
-width:38,height:38,borderRadius:6,cursor:"pointer",
-fontSize:"1.4rem",fontFamily:"inherit",padding:0,
-display:"flex",alignItems:"center",justifyContent:"center",
-touchAction:"manipulation",
-};
+function RepCell({label, kg, pp, done, maxReps, split, showSplit, onKg, onPP, onDone, onSplit}) {
+const {useState:us, useEffect:ue, useRef:ur} = React;
+const [localDone, setLocalDone] = us(done||false);
+const [localPP, setLocalPP] = us(pp||0);
+const timerRef = ur(null);
+const LOCK_DELAY = 3000; // 3 sekunder inaktivitet → låser cellen
 
-function RepCell({label, kg, pp, maxReps, split, showSplit, onKg, onPP, onSplit}) {
-const clean = maxReps - pp;
-const isClean = pp === 0 && !split;
+// Synka utifrån om cellen redigeras externt (t.ex. vid edit av gammalt pass)
+ue(()=>{ setLocalDone(done||false); },[done]);
+ue(()=>{ setLocalPP(pp||0); },[pp]);
+
+function resetTimer() {
+clearTimeout(timerRef.current);
+timerRef.current = setTimeout(()=>{
+// Lås cellen efter inaktivitet – anropa parent med aktuell state
+onDone(true, localPP);
+setLocalDone(true);
+}, LOCK_DELAY);
+}
+
+function handleDone() {
+setLocalDone(true);
+onDone(true, localPP);
+clearTimeout(timerRef.current);
+}
+
+function handleUndo() {
+setLocalDone(false);
+setLocalPP(0);
+onDone(false, 0);
+clearTimeout(timerRef.current);
+}
+
+function handlePP(newPP) {
+const clamped = Math.max(0, Math.min(maxReps, newPP));
+setLocalPP(clamped);
+onPP(clamped);
+if (!localDone) resetTimer();
+}
+
+ue(()=>()=>clearTimeout(timerRef.current), []);
+
+const clean = maxReps - localPP;
+const hasActivity = localDone || localPP > 0;
+const isClean = localPP === 0 && !split;
 const WEIGHTS = ["16","20","24"];
+
+// Färger baserat på state
+let bg, border;
+if (!hasActivity) { bg=C.surface; border=C.border; }
+else if (localPP > 0) { bg=C.orangeBg; border=C.orangeBorder; }
+else { bg="#f4f8ee"; border=C.abcBorder; }
+
 return (
-<div style={{border:`1px solid ${pp>0?C.orangeBorder:isClean&&pp===0&&!split?C.abcBorder:C.border}`,borderRadius:7,padding:"7px 8px",background:pp>0?C.orangeBg:isClean?"#f4f8ee":C.surface,display:"flex",flexDirection:"column",gap:5}}>
+<div style={{border:`1px solid ${border}`,borderRadius:7,padding:"7px 8px",background:bg,display:"flex",flexDirection:"column",gap:5,transition:"background 0.2s,border-color 0.2s"}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 <div style={{fontSize:"0.52rem",color:C.faint,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:600}}>{label}</div>
+{localDone&&<button onClick={handleUndo} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"0.6rem",padding:0,touchAction:"manipulation",letterSpacing:"0.04em"}}>ångra</button>}
+</div>
 <div style={{display:"flex",gap:3}}>
 {WEIGHTS.map(w=>(
 <button key={w} onClick={()=>onKg(w)} style={{
@@ -381,15 +430,30 @@ touchAction:"manipulation",
 </div>
 {split ? (
 <div style={{fontSize:"0.62rem",color:C.pressText,fontWeight:600}}>{split}</div>
-) : (
-<div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-<span style={{fontSize:"0.68rem",fontWeight:700,color:isClean?C.abcText:C.orange}}>
-{isClean ? `${maxReps}✓` : `${clean}✓ ${pp}PP`}
+) : localDone ? (
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}>
+<span style={{fontSize:"0.72rem",fontWeight:700,color:localPP>0?C.orange:C.abcText}}>
+{localPP>0?`${clean}✓ ${localPP}PP`:`${maxReps}×${kg}✓`}
 </span>
 <div style={{display:"flex",gap:3}}>
-<button onClick={()=>onPP(Math.max(0,pp-1))} style={ppBtn}>−</button>
-<button onClick={()=>onPP(Math.min(maxReps,pp+1))} style={ppBtn}>+</button>
+<button onClick={()=>handlePP(localPP-1)} style={{background:C.bg,border:`1px solid ${C.border2}`,color:C.muted,width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:"1.2rem",fontFamily:"inherit",padding:0,display:"flex",alignItems:"center",justifyContent:"center",touchAction:"manipulation"}}>−</button>
+<button onClick={()=>handlePP(localPP+1)} style={{background:C.orangeBg,border:`1px solid ${C.orangeBorder}`,color:C.orange,width:34,height:34,borderRadius:6,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",padding:0,display:"flex",alignItems:"center",justifyContent:"center",touchAction:"manipulation",fontWeight:700}}>+PP</button>
 </div>
+</div>
+) : (
+<div style={{display:"flex",gap:4}}>
+<button onClick={handleDone} style={{
+flex:1,background:C.bg,border:`1px dashed ${C.border2}`,
+color:C.muted,padding:"7px 4px",borderRadius:6,cursor:"pointer",
+fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,
+touchAction:"manipulation",letterSpacing:"0.04em",
+}}>✓ Klart</button>
+<button onClick={()=>handlePP(localPP+1)} style={{
+background:C.orangeBg,border:`1px solid ${C.orangeBorder}`,
+color:C.orange,padding:"7px 8px",borderRadius:6,cursor:"pointer",
+fontSize:"0.65rem",fontFamily:"inherit",fontWeight:700,
+touchAction:"manipulation",
+}}>+PP</button>
 </div>
 )}
 {showSplit && (
@@ -421,17 +485,17 @@ Stege {idx+1}
 )}
 </div>
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-<RepCell label="2 reps" kg={s.two?.kg||"24"} pp={s.two?.pp||0} maxReps={2}
-onKg={v=>upd("two","kg",v)} onPP={v=>upd("two","pp",v)}/>
-<RepCell label="3 reps" kg={s.three?.kg||"24"} pp={s.three?.pp||0} maxReps={3}
-onKg={v=>upd("three","kg",v)} onPP={v=>upd("three","pp",v)}/>
-<RepCell label="5 reps" kg={s.five?.kg||"20"} pp={s.five?.pp||0} maxReps={5}
-onKg={v=>upd("five","kg",v)} onPP={v=>upd("five","pp",v)}/>
+<RepCell label="2 reps" kg={s.two?.kg||"24"} pp={s.two?.pp||0} done={s.two?.done||false} maxReps={2}
+onKg={v=>upd("two","kg",v)} onPP={v=>upd("two","pp",v)} onDone={(d,p)=>{upd("two","done",d);upd("two","pp",p);}}/>
+<RepCell label="3 reps" kg={s.three?.kg||"24"} pp={s.three?.pp||0} done={s.three?.done||false} maxReps={3}
+onKg={v=>upd("three","kg",v)} onPP={v=>upd("three","pp",v)} onDone={(d,p)=>{upd("three","done",d);upd("three","pp",p);}}/>
+<RepCell label="5 reps" kg={s.five?.kg||"20"} pp={s.five?.pp||0} done={s.five?.done||false} maxReps={5}
+onKg={v=>upd("five","kg",v)} onPP={v=>upd("five","pp",v)} onDone={(d,p)=>{upd("five","done",d);upd("five","pp",p);}}/>
 <div>
 {s.showTen ? (
-<RepCell label="10 reps" kg={s.ten?.kg||"16"} pp={s.ten?.pp||0} maxReps={10}
+<RepCell label="10 reps" kg={s.ten?.kg||"16"} pp={s.ten?.pp||0} done={s.ten?.done||false} maxReps={10}
 split={s.ten?.split||""} showSplit
-onKg={v=>upd("ten","kg",v)} onPP={v=>upd("ten","pp",v)} onSplit={v=>upd("ten","split",v)}/>
+onKg={v=>upd("ten","kg",v)} onPP={v=>upd("ten","pp",v)} onDone={(d,p)=>{upd("ten","done",d);upd("ten","pp",p);}} onSplit={v=>upd("ten","split",v)}/>
 ) : (
 <button onClick={()=>onUpdate(idx,"showTen","",true)} style={{
 width:"100%",height:"100%",minHeight:80,
