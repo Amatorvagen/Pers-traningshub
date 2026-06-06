@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Träningshub">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDE4MCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHJhZGlhbEdyYWRpZW50IGlkPSJiZyIgY3g9IjUwJSIgY3k9IjUwJSIgcj0iNzAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNEEyRTE4Ii8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMkExNjA4Ii8+PC9yYWRpYWxHcmFkaWVudD48cmFkaWFsR3JhZGllbnQgaWQ9ImJvZHkiIGN4PSIzNSUiIGN5PSIzMCUiIHI9IjY1JSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0U4QTA2MCIvPjxzdG9wIG9mZnNldD0iMzUlIiBzdG9wLWNvbG9yPSIjQzQ3QzRDIi8+PHN0b3Agb2Zmc2V0PSI3NSUiIHN0b3AtY29sb3I9IiM4QTRBMjAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM1QTJBMEEiLz48L3JhZGlhbEdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iaGFuZGxlIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzdBNTAzMCIvPjxzdG9wIG9mZnNldD0iNDAlIiBzdG9wLWNvbG9yPSIjM0EyMDEwIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjNUEzNDE4Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIGZpbGw9InVybCgjYmcpIi8+PGVsbGlwc2UgY3g9IjkwIiBjeT0iMTAwIiByeD0iNjQiIHJ5PSI1OCIgZmlsbD0iI0M0N0M0QyIgb3BhY2l0eT0iMC4wOCIvPjxjaXJjbGUgY3g9IjkwIiBjeT0iMTA4IiByPSI1MiIgZmlsbD0idXJsKCNib2R5KSIvPjxlbGxpcHNlIGN4PSI5MCIgY3k9IjE1OCIgcng9IjM4IiByeT0iNiIgZmlsbD0iIzFBMEEwNCIgb3BhY2l0eT0iMC41Ii8+PHBhdGggZD0iTTcwIDcyIFE3MCAyOCA5MCAyOCBRMTEwIDI4IDExMCA3MiIgc3Ryb2tlPSJ1cmwoI2hhbmRsZSkiIHN0cm9rZS13aWR0aD0iMTYiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03NCA2OCBRNzQgMzYgOTAgMzYgUTEwNiAzNiAxMDYgNjgiIHN0cm9rZT0iIzhBNTgzMCIgc3Ryb2tlLXdpZHRoPSI1IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuNTUiLz48dGV4dCB4PSI5MCIgeT0iMTIyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iU3luZSwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjgwMCIgZm9udC1zaXplPSIzNCIgZmlsbD0iI0ZERjVFRSIgbGV0dGVyLXNwYWNpbmc9IjEiPlBUSDwvdGV4dD48L3N2Zz4=">
 <title>Pers Träningshub</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -125,6 +126,51 @@ null,
 ];
 
 const ALL_PASSES = WEEK_SCHEDULE.flatMap(w => w.passes.filter(Boolean));
+// ── GIANT 3.0 SCHEMA – från 1 juni ──
+const GIANT_SCHEDULE = [
+{week:"V1",phase:"Inköring",dateRange:"1–7 jun",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · autoreglerat · ~45 set",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · autoreglerat · ~15 set",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · autoreglerat · testa in",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V2",phase:"Inköring",dateRange:"8–14 jun",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · autoreglerat",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · autoreglerat",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · autoreglerat",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V3",phase:"Bygg",dateRange:"15–21 jun",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · mer än v2",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · mer än v2",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · mer än v2",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V4",phase:"Bygg",dateRange:"22–28 jun",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · mer än v3",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · mer än v3",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · mer än v3",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V5",phase:"Bygg",dateRange:"29 jun–5 jul",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · mer än v4",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · mer än v4",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · mer än v4",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V6",phase:"Tryck",dateRange:"6–12 jul",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · mer än v5",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · mer än v5",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · mer än v5",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V7",phase:"Tryck",dateRange:"13–19 jul",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · bygg vidare",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · bygg vidare",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · bygg vidare",weight:"24 kg",giantDay:"3"},
+]},
+{week:"V8",phase:"Avslut",dateRange:"20–26 jul",passes:[
+{pass:"Pass 1",type:"Giant",detail:"1 rep/set · maxpass",weight:"24 kg",giantDay:"1"},
+{pass:"Pass 2",type:"Giant",detail:"2 reps/set · maxpass",weight:"24 kg",giantDay:"2"},
+{pass:"Pass 3",type:"Giant",detail:"3 reps/set · maxpass",weight:"24 kg",giantDay:"3"},
+]},
+];
+const ALL_GIANT_PASSES = GIANT_SCHEDULE.flatMap(w => w.passes.filter(Boolean));
+
 
 // ── ÅRSPLAN – PROGRAMDATA ──
 const PROGRAM_PLAN = [
@@ -264,14 +310,14 @@ date:todayStr(),type:"Press",steges:[emptyStege()],
 sets:"",secPerSet:"",bonusSets:"",pauses:[],
 otherTitle:"",otherNotes:"",
 wwKg:"16",wwRounds:[[]],wwNotes:"",
-giantDay:"1",giantSets:"",giantKg:"24",
+giantDay:"1",giantSets:"",giantKg:"24",giantMinutes:"",
 feeling:2,sleep:2,stress:2,
 prehabArms:false,prehabKnees:false,
 bodyLog:"",notes:"",
 };
 
 // Giant: reps per dag-typ
-const GIANT_REPS = {"1":2,"2":3,"3":1};
+const GIANT_REPS = {"1":1,"2":2,"3":3};
 
 function totalPP(log) {
 if (!log.steges) return 0;
@@ -1315,14 +1361,16 @@ border:`1px solid ${round.includes(step)?C.accentMid:C.border}`,
 </div>
 )}
 {l.type==="Giant"&&(()=>{
-const reps=GIANT_REPS[l.giantDay]||2;
+const reps=GIANT_REPS[l.giantDay]||1;
 const vol=l.giantSets&&l.giantKg?Number(l.giantSets)*reps*Number(l.giantKg)*2:0;
+const avgRest=l.giantSets&&l.giantMinutes?Math.round((Number(l.giantMinutes)*60)/Number(l.giantSets)):null;
 return (
 <div style={{display:"flex",flexDirection:"column",gap:5}}>
 <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
-<Stat label="Dag" val={`Dag ${l.giantDay||"?"} (${reps}r/set)`}/>
+<Stat label="Dag" val={`Dag ${l.giantDay||"?"} · ${reps}r/set`}/>
 <Stat label="Set" val={l.giantSets||"—"}/>
-<Stat label="Vikt" val={`${l.giantKg||24} kg`}/>
+<Stat label="Tid" val={l.giantMinutes?`${l.giantMinutes} min`:"—"}/>
+{avgRest&&<Stat label="Snitt vila" val={`${avgRest} sek`}/>}
 {vol>0&&<Stat label="Volym" val={`${vol.toLocaleString("sv-SE")} kg`}/>}
 </div>
 </div>
@@ -1430,16 +1478,18 @@ return (
 )}
 
 {l.type==="Giant"&&(()=>{
-const reps=GIANT_REPS[l.giantDay]||2;
+const reps=GIANT_REPS[l.giantDay]||1;
 const vol=l.giantSets&&l.giantKg?Number(l.giantSets)*reps*Number(l.giantKg)*2:0;
+const avgRest=l.giantSets&&l.giantMinutes?Math.round((Number(l.giantMinutes)*60)/Number(l.giantSets)):null;
 return (
 <div style={{marginBottom:14}}>
 <div style={{fontSize:"0.6rem",letterSpacing:"0.12em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:8}}>Giant 3.0 – resultat</div>
 <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-<div><div style={{fontSize:"0.55rem",color:C.faint}}>Dag-typ</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>Dag {l.giantDay||"?"}</div><div style={{fontSize:"0.6rem",color:"#9A68B8"}}>{reps} reps/set</div></div>
-<div><div style={{fontSize:"0.55rem",color:C.faint}}>Set</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{l.giantSets||"—"}</div></div>
-<div><div style={{fontSize:"0.55rem",color:C.faint}}>Vikt</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{l.giantKg||24} kg</div></div>
-{vol>0&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Total volym</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{vol.toLocaleString("sv-SE")} kg</div></div>}
+<div><div style={{fontSize:"0.55rem",color:C.faint}}>Dag</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>Dag {l.giantDay||"?"}</div><div style={{fontSize:"0.6rem",color:"#9A68B8"}}>{reps} reps/set</div></div>
+<div><div style={{fontSize:"0.55rem",color:C.faint}}>Set @ 24 kg</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{l.giantSets||"—"}</div></div>
+<div><div style={{fontSize:"0.55rem",color:C.faint}}>Passlängd</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{l.giantMinutes||"—"} min</div></div>
+{avgRest&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Snitt vila</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{avgRest} sek/set</div></div>}
+{vol>0&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Volym</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{vol.toLocaleString("sv-SE")} kg</div></div>}
 </div>
 </div>
 );
@@ -1516,9 +1566,10 @@ return <div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.steges
 })()}
 {l.type==="WW"&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.wwKg||"?"}kg · {l.wwRounds?.length||0} ronder · {l.wwRounds?.filter(r=>r.length===5).length||0} kompletta</div>}
 {l.type==="Giant"&&(()=>{
-const reps=GIANT_REPS[l.giantDay]||2;
+const reps=GIANT_REPS[l.giantDay]||1;
 const vol=l.giantSets&&l.giantKg?Number(l.giantSets)*reps*Number(l.giantKg)*2:0;
-return <div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>Dag {l.giantDay} · {l.giantSets||"?"} set · {l.giantKg||24}kg{vol>0?` · ${vol.toLocaleString("sv-SE")}kg vol`:""}</div>;
+const avgRest=l.giantSets&&l.giantMinutes?Math.round((Number(l.giantMinutes)*60)/Number(l.giantSets)):null;
+return <div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>Dag {l.giantDay} · {l.giantSets||"?"} set · {l.giantMinutes||"?"}min{avgRest?` · ~${avgRest}s vila`:""}</div>;
 })()}
 {l.type==="Annat"&&l.otherTitle&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.otherTitle.slice(0,24)}</div>}
 {l.bodyLog&&<div style={{fontSize:"0.57rem",color:C.orange,lineHeight:1.4}}>📝 {l.bodyLog.slice(0,40)}{l.bodyLog.length>40?"…":""}</div>}
@@ -2006,16 +2057,17 @@ onRemove={()=>setForm({...form,steges:form.steges.filter((_,i)=>i!==idx)})}
 )}
 
 {form.type==="Giant"&&(()=>{
-const reps=GIANT_REPS[form.giantDay]||2;
+const reps=GIANT_REPS[form.giantDay]||1;
 const vol=form.giantSets&&form.giantKg?Number(form.giantSets)*reps*Number(form.giantKg)*2:0;
+const avgRest=form.giantSets&&form.giantMinutes?Math.round((Number(form.giantMinutes)*60)/Number(form.giantSets)):null;
 return (
 <>
 <div style={{background:"#F0EAF8",border:"1px solid #C8A8D8",borderRadius:8,padding:"10px 12px",fontSize:"0.72rem",color:"#4A1A78",lineHeight:1.7}}>
-<strong>Giant 3.0</strong> · 30 min AMRAP · Clean & Press · Vila efter behov
+<strong>Giant 3.0</strong> · Clean & Press · Autoreglerat · 24 kg
 </div>
 <Row label="Dag-typ">
 <div style={{display:"flex",gap:8}}>
-{[["1","2 reps/set"],["2","3 reps/set"],["3","1 rep/set"]].map(([d,desc])=>(
+{[["1","1 rep/set","~45 set"],["2","2 reps/set","~15 set"],["3","3 reps/set","testa"]].map(([d,desc,hint])=>(
 <button key={d} onClick={()=>setForm({...form,giantDay:d})} style={{
 flex:1,background:form.giantDay===d?"#F0EAF8":C.bg,
 border:`2px solid ${form.giantDay===d?"#C8A8D8":C.border2}`,
@@ -2025,32 +2077,32 @@ fontSize:"0.72rem",fontFamily:"inherit",fontWeight:form.giantDay===d?700:500,
 touchAction:"manipulation",textAlign:"center",
 }}>
 <div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"0.9rem"}}>Dag {d}</div>
-<div style={{fontSize:"0.58rem",marginTop:2}}>{desc}</div>
+<div style={{fontSize:"0.58rem",marginTop:1}}>{desc}</div>
+<div style={{fontSize:"0.52rem",marginTop:1,opacity:0.6}}>{hint}</div>
 </button>
 ))}
 </div>
 </Row>
-<Row label="Antal set">
-<input type="number" placeholder="t.ex. 14" value={form.giantSets} onChange={e=>setForm({...form,giantSets:e.target.value})} style={{...IS,width:140}}/>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+<Row label="Antal set @ 24 kg">
+<input type="number" placeholder="t.ex. 15" value={form.giantSets} onChange={e=>setForm({...form,giantSets:e.target.value})} style={{...IS,width:"100%"}}/>
 </Row>
-<Row label="Vikt (kg)">
-<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-{["20","24","28"].map(w=>(
-<button key={w} onClick={()=>setForm({...form,giantKg:w})} style={{
-background:form.giantKg===w?"#F0EAF8":C.bg,
-border:`2px solid ${form.giantKg===w?"#C8A8D8":C.border2}`,
-color:form.giantKg===w?"#4A1A78":C.muted,
-padding:"7px 18px",borderRadius:6,cursor:"pointer",
-fontSize:"0.85rem",fontWeight:form.giantKg===w?700:500,touchAction:"manipulation",
-}}>{w} kg</button>
-))}
+<Row label="Passlängd (min)">
+<input type="number" placeholder="t.ex. 30" value={form.giantMinutes} onChange={e=>setForm({...form,giantMinutes:e.target.value})} style={{...IS,width:"100%"}}/>
+</Row>
 </div>
-</Row>
-{vol>0&&(
-<div style={{background:"#F0EAF8",border:"1px solid #C8A8D8",borderRadius:7,padding:"10px 14px"}}>
-<div style={{fontSize:"0.55rem",color:"#9A68B8",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:600,marginBottom:3}}>Volym detta pass</div>
-<div style={{fontFamily:"'Syne',sans-serif",fontSize:"1.1rem",fontWeight:800,color:"#4A1A78"}}>{vol.toLocaleString("sv-SE")} kg</div>
-<div style={{fontSize:"0.6rem",color:"#9A68B8",marginTop:2}}>{form.giantSets} set × {reps} reps × {form.giantKg} kg × 2 KB</div>
+{(vol>0||avgRest)&&(
+<div style={{background:"#F0EAF8",border:"1px solid #C8A8D8",borderRadius:7,padding:"10px 14px",display:"flex",gap:20,flexWrap:"wrap"}}>
+{vol>0&&<div>
+<div style={{fontSize:"0.55rem",color:"#9A68B8",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:600,marginBottom:2}}>Volym</div>
+<div style={{fontFamily:"'Syne',sans-serif",fontSize:"1rem",fontWeight:800,color:"#4A1A78"}}>{vol.toLocaleString("sv-SE")} kg</div>
+<div style={{fontSize:"0.58rem",color:"#9A68B8"}}>{form.giantSets}×{reps}r×{form.giantKg}kg×2</div>
+</div>}
+{avgRest&&<div>
+<div style={{fontSize:"0.55rem",color:"#9A68B8",letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:600,marginBottom:2}}>Snitt vila</div>
+<div style={{fontFamily:"'Syne',sans-serif",fontSize:"1rem",fontWeight:800,color:"#4A1A78"}}>{avgRest} sek</div>
+<div style={{fontSize:"0.58rem",color:"#9A68B8"}}>per set i snitt</div>
+</div>}
 </div>
 )}
 </>
@@ -2269,7 +2321,10 @@ const dayColors={"1":"#4A1A78","2":"#9A68B8","3":"#C8A8D8"};
 return (
 <>
 <ChartBlock title="Giant — Antal set per pass (alla dagar)" data={giantLogs.map(l=>({label:`D${l.giantDay||"?"} ${shortDate(l.date)}`,val:Number(l.giantSets)}))} color="#4A1A78" max={30}/>
-<ChartBlock title="Giant — Total volym per pass (kg)" data={giantLogs.map(l=>{const reps=GIANT_REPS[l.giantDay]||2;const vol=Number(l.giantSets)*reps*Number(l.giantKg)*2;return {label:`D${l.giantDay||"?"} ${shortDate(l.date)}`,val:vol};})} color="#9A68B8" max={5000}/>
+<ChartBlock title="Giant — Total volym per pass (kg)" data={giantLogs.map(l=>{const reps=GIANT_REPS[l.giantDay]||1;const vol=Number(l.giantSets)*reps*Number(l.giantKg)*2;return {label:`D${l.giantDay||"?"} ${shortDate(l.date)}`,val:vol};})} color="#9A68B8" max={5000}/>
+{giantLogs.some(l=>l.giantMinutes&&l.giantSets)&&(
+<ChartBlock title="Giant — Snitt vila per set (sek)" data={giantLogs.filter(l=>l.giantMinutes&&l.giantSets).map(l=>({label:`D${l.giantDay||"?"} ${shortDate(l.date)}`,val:Math.round((Number(l.giantMinutes)*60)/Number(l.giantSets))}))} color="#C8A8D8" max={180} lowerIsBetter/>
+)}
 </>
 );
 })()}
