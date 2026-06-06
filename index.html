@@ -1920,7 +1920,7 @@ return (
 {view==="schedule"&&(
 <div>
 <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-{[{color:C.press,border:C.pressBorder,label:"Press"},{color:C.abc,border:C.abcBorder,label:"ABC"},{color:C.missedBg,border:C.missedBorder,label:"Missat"},{color:C.surfaceAlt,border:C.border,label:"Klar"}].map(l=>(
+{[{color:C.press,border:C.pressBorder,label:"Press"},{color:C.abc,border:C.abcBorder,label:"ABC"},{color:C.missedBg,border:C.missedBorder,label:"Missat"},{color:"#FFF0F8",border:"#E8A8C8",label:"Sjuk"},{color:C.surfaceAlt,border:C.border,label:"Klar"}].map(l=>(
 <div key={l.label} style={{display:"flex",alignItems:"center",gap:6,fontSize:"0.62rem",color:C.muted}}>
 <div style={{width:10,height:10,borderRadius:2,background:l.color,border:`1px solid ${l.border}`}}/>
 {l.label}
@@ -1934,6 +1934,7 @@ return (
 {passIndex<ALL_PASSES.length&&<>
 <button onClick={()=>advancePass("done")} style={{background:C.accent,border:"none",color:"#fff",padding:"5px 14px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:700,touchAction:"manipulation"}}>✓ Klar</button>
 <button onClick={()=>advancePass("missed")} style={{background:"transparent",border:`1px solid ${C.border2}`,color:C.muted,padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>Missade</button>
+<button onClick={()=>advancePass("sick")} style={{background:"#FFF0F8",border:"1px solid #E8A8C8",color:"#A04070",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>🤒 Sjuk</button>
 </>}
 </div>
 </div>
@@ -1972,6 +1973,10 @@ bg=col.bg; border=col.border; textCol=col.text;
 bg="#fdf0f0"; border="#e8b8b8"; textCol="#a05050";
 dashed=true; opacity=0.8;
 statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#a05050",fontWeight:700}}>😬 Missade</div>;
+} else if (outcome==="sick") {
+bg="#FFF0F8"; border="#E8A8C8"; textCol="#A04070";
+dashed=true; opacity=0.8;
+statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#A04070",fontWeight:700}}>🤒 Sjuk</div>;
 } else {
 bg="#eef8ee"; border="#90c890"; textCol="#2a6a2a";
 dashed=true; opacity=0.75;
@@ -1994,6 +1999,70 @@ return (
 </div>
 );
 })}
+
+{/* ── GIANT-SCHEMA ── */}
+{(()=>{
+const showGiant=ALL_GIANT_PASSES.length>0;
+if(!showGiant) return null;
+return (
+<>
+<div style={{fontSize:"0.72rem",fontFamily:"'Syne',sans-serif",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#4A1A78",margin:"20px 0 10px 0",paddingBottom:8,borderBottom:"1px solid #C8A8D8"}}>
+Juni / Juli 2026 — Giant 3.0
+</div>
+{GIANT_SCHEDULE.map((week,wi)=>{
+let wsi=ALL_PASSES.length;
+for(let i=0;i<wi;i++) wsi+=GIANT_SCHEDULE[i].passes.filter(Boolean).length;
+return (
+<div key={wi} style={{marginBottom:8}}>
+<div style={{display:"grid",gridTemplateColumns:"52px 1fr 1fr 1fr",gap:7}}>
+<div style={{display:"flex",flexDirection:"column",justifyContent:"center",paddingTop:4}}>
+<div style={{fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:"#7A3A9A"}}>{week.week}</div>
+<div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.04em"}}>{week.phase}</div>
+<div style={{fontSize:"0.5rem",color:C.faint,marginTop:1}}>{week.dateRange}</div>
+</div>
+{[0,1,2].map(pi=>{
+const p=week.passes[pi];
+if(!p) return <div key={pi} style={{visibility:"hidden"}}/>;
+const localIdx=week.passes.slice(0,pi).filter(Boolean).length;
+const globalIdx=wsi+localIdx;
+const done=globalIdx<passIndex;
+const isCurrent=globalIdx===passIndex;
+const outcome=passOutcomes[globalIdx];
+let bg,border,textCol,dashed=false,opacity=1,statusEl=null;
+if (!done) {
+bg="#F0EAF8"; border="#C8A8D8"; textCol="#4A1A78";
+} else if (outcome==="missed") {
+bg="#fdf0f0"; border="#e8b8b8"; textCol="#a05050";
+dashed=true; opacity=0.8;
+statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#a05050",fontWeight:700}}>😬 Missade</div>;
+} else if (outcome==="sick") {
+bg="#FFF0F8"; border="#E8A8C8"; textCol="#A04070";
+dashed=true; opacity=0.8;
+statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#A04070",fontWeight:700}}>🤒 Sjuk</div>;
+} else {
+bg="#eef8ee"; border="#90c890"; textCol="#2a6a2a";
+dashed=true; opacity=0.75;
+statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#2a6a2a",fontWeight:700}}>✅ Klart</div>;
+}
+return (
+<div key={pi} style={{background:bg,border:`2px ${dashed?"dashed":"solid"} ${isCurrent?"#7A3A9A":border}`,borderRadius:7,padding:"9px 10px",minHeight:88,display:"flex",flexDirection:"column",gap:3,opacity,boxShadow:isCurrent?"0 0 0 3px #EAD8F8":"none"}}>
+<div style={{fontSize:"0.58rem",color:done?textCol:C.muted,fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}}>{p.pass}</div>
+<div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.78rem",color:isCurrent?"#7A3A9A":textCol}}>
+{p.type}{isCurrent?" ←":""}
+</div>
+<div style={{fontSize:"0.55rem",color:done?textCol:"#9A68B8",fontWeight:700}}>{p.weight}</div>
+<div style={{fontSize:"0.58rem",color:done?textCol:C.muted,lineHeight:1.5}}>{p.detail}</div>
+{statusEl}
+</div>
+);
+})}
+</div>
+</div>
+);
+})}
+</>
+);
+})()}
 </div>
 )}
 
