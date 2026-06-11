@@ -1653,6 +1653,50 @@ try {
 await dbSaveLog(entry);
 const nl=[entry,...logs].sort((a,b)=>b.date.localeCompare(a.date));
 setLogs(nl);
+
+// Auto-markera schema-pass som klart om datum matchar och är nästa pass
+const allScheduledPasses = [
+...WEEK_SCHEDULE.flatMap(w=>w.passes.filter(Boolean)),
+...GIANT_SCHEDULE.flatMap(w=>w.passes.filter(Boolean)),
+];
+const currentPass = allScheduledPasses[passIndex];
+const loggedDate = form.date;
+// Kolla om loggad datum faller inom rätt vecka för nuvarande pass
+if (currentPass && !form.id) {
+// Hitta vecko-datumintervall för detta pass
+const allRanges = [
+["2026-03-30","2026-04-06"],["2026-04-07","2026-04-13"],
+["2026-04-14","2026-04-20"],["2026-04-21","2026-04-27"],
+["2026-04-28","2026-05-04"],["2026-05-05","2026-05-11"],
+["2026-05-12","2026-05-18"],["2026-05-19","2026-05-25"],
+["2026-05-26","2026-05-31"],
+["2026-06-01","2026-06-07"],["2026-06-08","2026-06-14"],
+["2026-06-15","2026-06-21"],["2026-06-22","2026-06-28"],
+["2026-06-29","2026-07-05"],["2026-07-06","2026-07-12"],
+["2026-07-13","2026-07-19"],["2026-07-20","2026-07-26"],
+];
+// Räkna ut vilken vecko-index detta pass tillhör
+let passCount=0, weekForPass=-1;
+for(let wi=0;wi<WEEK_SCHEDULE.length;wi++){
+const ps=WEEK_SCHEDULE[wi].passes.filter(Boolean);
+if(passIndex>=passCount&&passIndex<passCount+ps.length){weekForPass=wi;break;}
+passCount+=ps.length;
+}
+if(weekForPass===-1){
+let gc=0;
+for(let wi=0;wi<GIANT_SCHEDULE.length;wi++){
+const ps=GIANT_SCHEDULE[wi].passes.filter(Boolean);
+const gi=passIndex-WEEK_SCHEDULE.flatMap(w=>w.passes.filter(Boolean)).length;
+if(gi>=gc&&gi<gc+ps.length){weekForPass=WEEK_SCHEDULE.length+wi;break;}
+gc+=ps.length;
+}
+}
+const range = allRanges[weekForPass];
+if(range && loggedDate>=range[0] && loggedDate<=range[1]){
+await advancePass("done");
+}
+}
+
 const fresh={...emptyForm,date:todayStr()};
 setForm(fresh);
 await dbSaveState(DRAFT_KEY, JSON.stringify(fresh));
@@ -1920,21 +1964,25 @@ return (
 {view==="schedule"&&(
 <div>
 <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-{[{color:C.press,border:C.pressBorder,label:"Press"},{color:C.abc,border:C.abcBorder,label:"ABC"},{color:C.missedBg,border:C.missedBorder,label:"Missat"},{color:"#FFF0F8",border:"#E8A8C8",label:"Sjuk"},{color:C.surfaceAlt,border:C.border,label:"Klar"}].map(l=>(
+{[{color:C.press,border:C.pressBorder,label:"Press"},{color:C.abc,border:C.abcBorder,label:"ABC"},{color:C.missedBg,border:C.missedBorder,label:"Missat"},{color:"#F0F4C0",border:"#B8C030",label:"Sjuk"},{color:C.surfaceAlt,border:C.border,label:"Klar"}].map(l=>(
 <div key={l.label} style={{display:"flex",alignItems:"center",gap:6,fontSize:"0.62rem",color:C.muted}}>
 <div style={{width:10,height:10,borderRadius:2,background:l.color,border:`1px solid ${l.border}`}}/>
 {l.label}
 </div>
 ))}
 </div>
-<div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:8,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-<span style={{fontSize:"0.65rem",color:C.accent,fontWeight:700}}>Pass {Math.min(passIndex+1,ALL_PASSES.length)} av {ALL_PASSES.length}</span>
+<div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:8,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",position:"sticky",top:0,zIndex:10}}>
+<span style={{fontSize:"0.65rem",color:C.accent,fontWeight:700}}>
+{passIndex<ALL_PASSES.length
+  ? `ABF: Pass ${passIndex+1} av ${ALL_PASSES.length}`
+  : `Giant: Pass ${passIndex-ALL_PASSES.length+1} av ${ALL_GIANT_PASSES.length}`}
+</span>
 <div style={{display:"flex",gap:6,marginLeft:"auto",flexWrap:"wrap"}}>
 {passIndex>0&&<button onClick={undoAdvance} style={{background:"transparent",border:`1px solid ${C.border2}`,color:C.muted,padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>← Ångra</button>}
-{passIndex<ALL_PASSES.length&&<>
+{passIndex<ALL_PASSES.length+ALL_GIANT_PASSES.length&&<>
 <button onClick={()=>advancePass("done")} style={{background:C.accent,border:"none",color:"#fff",padding:"5px 14px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:700,touchAction:"manipulation"}}>✓ Klar</button>
 <button onClick={()=>advancePass("missed")} style={{background:"transparent",border:`1px solid ${C.border2}`,color:C.muted,padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>Missade</button>
-<button onClick={()=>advancePass("sick")} style={{background:"#FFF0F8",border:"1px solid #E8A8C8",color:"#A04070",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>🤒 Sjuk</button>
+<button onClick={()=>advancePass("sick")} style={{background:"#F0F4C0",border:"1px solid #B8C030",color:"#606000",padding:"5px 12px",borderRadius:5,cursor:"pointer",fontSize:"0.65rem",fontFamily:"inherit",fontWeight:600,touchAction:"manipulation"}}>🤒 Sjuk</button>
 </>}
 </div>
 </div>
@@ -1974,9 +2022,9 @@ bg="#fdf0f0"; border="#e8b8b8"; textCol="#a05050";
 dashed=true; opacity=0.8;
 statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#a05050",fontWeight:700}}>😬 Missade</div>;
 } else if (outcome==="sick") {
-bg="#FFF0F8"; border="#E8A8C8"; textCol="#A04070";
+bg="#F0F4C0"; border="#B8C030"; textCol="#606000";
 dashed=true; opacity=0.8;
-statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#A04070",fontWeight:700}}>🤒 Sjuk</div>;
+statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#606000",fontWeight:700}}>🤒 Sjuk</div>;
 } else {
 bg="#eef8ee"; border="#90c890"; textCol="#2a6a2a";
 dashed=true; opacity=0.75;
@@ -2036,9 +2084,9 @@ bg="#fdf0f0"; border="#e8b8b8"; textCol="#a05050";
 dashed=true; opacity=0.8;
 statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#a05050",fontWeight:700}}>😬 Missade</div>;
 } else if (outcome==="sick") {
-bg="#FFF0F8"; border="#E8A8C8"; textCol="#A04070";
+bg="#F0F4C0"; border="#B8C030"; textCol="#606000";
 dashed=true; opacity=0.8;
-statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#A04070",fontWeight:700}}>🤒 Sjuk</div>;
+statusEl=<div style={{marginTop:"auto",fontSize:"0.6rem",color:"#606000",fontWeight:700}}>🤒 Sjuk</div>;
 } else {
 bg="#eef8ee"; border="#90c890"; textCol="#2a6a2a";
 dashed=true; opacity=0.75;
