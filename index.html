@@ -1372,7 +1372,7 @@ return (
 <Stat label="Tid" val={l.giantMinutes?`${l.giantMinutes} min`:"—"}/>
 {avgRest&&<Stat label="Snitt vila" val={`${avgRest} sek`}/>}
 {vol>0&&<Stat label="Volym" val={`${vol.toLocaleString("sv-SE")} kg`}/>}
-{l.giantSets&&<Stat label="Tot C&P" val={`${Number(l.giantSets)*reps*2} lyft`}/>}
+{l.giantSets&&<Stat label="Tot reps" val={`${Number(l.giantSets)*reps}`}/>}
 </div>
 </div>
 );
@@ -1491,7 +1491,7 @@ return (
 <div><div style={{fontSize:"0.55rem",color:C.faint}}>Passlängd</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{l.giantMinutes||"—"} min</div></div>
 {avgRest&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Snitt vila</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{avgRest} sek/set</div></div>}
 {vol>0&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Volym</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{vol.toLocaleString("sv-SE")} kg</div></div>}
-{l.giantSets&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Tot C&P</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{Number(l.giantSets)*reps*2} lyft</div></div>}
+{l.giantSets&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Tot reps</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{Number(l.giantSets)*reps}</div></div>}
 </div>
 </div>
 );
@@ -1850,8 +1850,8 @@ return (
 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
 {PROGRAM_PLAN.map((prog,i)=>{
 const today=todayStr();
-const isPast=prog.dateEnd<today&&!prog.active;
-const isCurrent=prog.active||(prog.dateRange<=today&&prog.dateEnd>=today);
+const isPast=prog.dateEnd<today;
+const isCurrent=!isPast&&prog.dateRange<=today&&prog.dateEnd>=today;
 const col=passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":"");
 return (
 <button key={i} onClick={()=>setSelectedProgram(prog)} style={{
