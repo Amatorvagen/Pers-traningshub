@@ -1372,6 +1372,7 @@ return (
 <Stat label="Tid" val={l.giantMinutes?`${l.giantMinutes} min`:"—"}/>
 {avgRest&&<Stat label="Snitt vila" val={`${avgRest} sek`}/>}
 {vol>0&&<Stat label="Volym" val={`${vol.toLocaleString("sv-SE")} kg`}/>}
+{l.giantSets&&<Stat label="Tot C&P" val={`${Number(l.giantSets)*reps*2} lyft`}/>}
 </div>
 </div>
 );
@@ -1490,6 +1491,7 @@ return (
 <div><div style={{fontSize:"0.55rem",color:C.faint}}>Passlängd</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{l.giantMinutes||"—"} min</div></div>
 {avgRest&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Snitt vila</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{avgRest} sek/set</div></div>}
 {vol>0&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Volym</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{vol.toLocaleString("sv-SE")} kg</div></div>}
+{l.giantSets&&<div><div style={{fontSize:"0.55rem",color:C.faint}}>Tot C&P</div><div style={{fontSize:"1rem",fontWeight:700,color:"#4A1A78"}}>{Number(l.giantSets)*reps*2} lyft</div></div>}
 </div>
 </div>
 );
@@ -1617,6 +1619,8 @@ if (draftVal) {
 try {
 const draft = JSON.parse(draftVal);
 if (!draft.wwRounds || draft.wwRounds.length === 0) draft.wwRounds = [[]];
+// Datum alltid dagens datum, oavsett vad som sparats i draft
+draft.date = todayStr();
 setForm(draft);
 } catch(e) {}
 }
@@ -1760,7 +1764,9 @@ await dbSaveState("pass-index", String(data.passIndex));
 
 const abcLogs=logs.filter(l=>l.type==="ABC"&&l.sets&&l.secPerSet);
 const pressLogs=logs.filter(l=>l.type==="Press"&&l.steges);
-const nextPass=ALL_PASSES[passIndex]||null;
+const ALL_COMBINED_PASSES = [...ALL_PASSES, ...ALL_GIANT_PASSES];
+const nextPass=ALL_COMBINED_PASSES[passIndex]||null;
+const nextPassIsGiant = passIndex >= ALL_PASSES.length;
 
 const NAV=[
 ["home","Hem"],["log","+ Logga"],["history","Historik"],["chart","Trend"],
@@ -1853,10 +1859,18 @@ background:isCurrent?C.accentLight:isPast?"#eef8ee":C.bg,
 border:`1px solid ${isCurrent?C.accent:isPast?"#90c890":C.border}`,
 borderRadius:7,padding:"7px 11px",cursor:"pointer",
 textAlign:"left",touchAction:"manipulation",
+opacity:isPast?0.55:1,
+position:"relative",
 }}>
-<div style={{fontSize:"0.72rem",fontFamily:"'Syne',sans-serif",fontWeight:700,color:isCurrent?C.accent:isPast?"#2a6a2a":C.muted}}>{prog.icon} {prog.label}</div>
+{isPast&&(
+<div style={{position:"absolute",top:4,right:5,fontSize:"0.7rem"}}>✅</div>
+)}
+<div style={{fontSize:"0.72rem",fontFamily:"'Syne',sans-serif",fontWeight:700,
+color:isCurrent?C.accent:isPast?"#2a6a2a":C.muted,
+textDecoration:isPast?"line-through":"none",
+textDecorationColor:"#90c890",
+}}>{prog.icon} {prog.label}</div>
 <div style={{fontSize:"0.55rem",color:isCurrent?C.accentMid:isPast?"#4a8a4a":C.faint,letterSpacing:"0.06em",marginTop:1}}>{prog.period}</div>
-{isPast&&<div style={{fontSize:"0.5rem",color:"#4a8a4a",marginTop:1}}>✅ Klar</div>}
 {isCurrent&&<div style={{fontSize:"0.5rem",color:C.accent,marginTop:1}}>▶ Pågår</div>}
 </button>
 );
@@ -1867,8 +1881,9 @@ textAlign:"left",touchAction:"manipulation",
 <div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:10,padding:"14px 16px"}}>
 <div style={{...labelStyle,color:C.accentMid}}>Nästa pass</div>
 {nextPass?(()=>{
-const totalWeeks = WEEK_SCHEDULE.filter(w=>w.phase!=="→ Giant").length;
+// Hitta vecka och vecko-obj – sök i rätt schema
 let weekNum=1, weekObj=null;
+if(!nextPassIsGiant){
 let idx=0;
 for(let wi=0;wi<WEEK_SCHEDULE.length;wi++){
 const w=WEEK_SCHEDULE[wi];
@@ -1878,14 +1893,31 @@ idx++;
 }
 if(weekObj) break;
 }
+} else {
+const giantIdx=passIndex-ALL_PASSES.length;
+let idx=0;
+for(let wi=0;wi<GIANT_SCHEDULE.length;wi++){
+const w=GIANT_SCHEDULE[wi];
+for(let pi=0;pi<w.passes.filter(Boolean).length;pi++){
+if(idx===giantIdx){weekNum=wi+1;weekObj=w;break;}
+idx++;
+}
+if(weekObj) break;
+}
+}
+const totalWeeks=nextPassIsGiant?GIANT_SCHEDULE.length:WEEK_SCHEDULE.filter(w=>w.phase!=="→ Giant").length;
+const prog=nextPassIsGiant?"Giant 3.0":"ABF";
+const accentCol=nextPassIsGiant?"#7A3A9A":C.accent;
+const accentLight=nextPassIsGiant?"#EAD8F8":C.accentLight;
 const rowStyle={display:"flex",gap:8,alignItems:"baseline",marginBottom:4};
 const labelCol={fontSize:"0.6rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.muted,width:64,flexShrink:0,fontWeight:600};
 const valStyle={fontSize:"0.72rem",color:C.text,fontWeight:500};
 return (
 <>
-<div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:C.accent,margin:"6px 0 10px"}}>
+<div style={{fontSize:"0.55rem",letterSpacing:"0.12em",textTransform:"uppercase",color:accentCol,fontWeight:600,marginBottom:4}}>{prog}</div>
+<div style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"1rem",color:accentCol,margin:"2px 0 10px"}}>
 {nextPass.type} · {nextPass.pass} · V{weekNum} av {totalWeeks}
-{weekObj&&<span style={{fontSize:"0.6rem",fontWeight:400,color:C.accentMid,marginLeft:8}}>{weekObj.dateRange}</span>}
+{weekObj&&<span style={{fontSize:"0.6rem",fontWeight:400,color:accentCol,marginLeft:8,opacity:0.7}}>{weekObj.dateRange}</span>}
 </div>
 <div style={{background:"rgba(255,255,255,0.6)",borderRadius:7,padding:"10px 12px",marginBottom:10}}>
 <div style={rowStyle}>
@@ -1908,11 +1940,17 @@ return (
 <span style={valStyle}>2 cleans + 1 press + 3 squats / set</span>
 </div>
 )}
+{nextPass.type==="Giant"&&(
+<div style={rowStyle}>
+<span style={labelCol}>Rörelser</span>
+<span style={valStyle}>Clean & Press · autoreglerat · {GIANT_REPS[nextPass.giantDay||"1"]} rep/set</span>
 </div>
-<p style={{fontSize:"0.68rem",color:C.accent,fontStyle:"italic",lineHeight:1.6,marginBottom:12}}>"{quote}"</p>
+)}
+</div>
+<p style={{fontSize:"0.68rem",color:accentCol,fontStyle:"italic",lineHeight:1.6,marginBottom:12}}>"{quote}"</p>
 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-<button onClick={()=>setView("log")} style={{background:C.accent,border:"none",color:"#fff",padding:"10px 20px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.8rem",touchAction:"manipulation"}}>Logga pass →</button>
-<button onClick={()=>advancePass("done")} style={{background:"transparent",border:`2px solid ${C.accentMid}`,color:C.accent,padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",fontSize:"0.7rem",fontWeight:600,touchAction:"manipulation"}}>Hoppa över</button>
+<button onClick={()=>{setForm(f=>({...f,type:"Giant",giantDay:nextPass.giantDay||"1",date:todayStr()}));setView("log");}} style={{background:accentCol,border:"none",color:"#fff",padding:"10px 20px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.8rem",touchAction:"manipulation"}}>Logga pass →</button>
+<button onClick={()=>advancePass("done")} style={{background:"transparent",border:`2px solid ${accentCol}`,color:accentCol,padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",fontSize:"0.7rem",fontWeight:600,touchAction:"manipulation"}}>Hoppa över</button>
 </div>
 </>
 );
@@ -1943,12 +1981,12 @@ return (
 <div style={cardStyle}>
 <div style={labelStyle}>Kommande pass</div>
 <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:7}}>
-{ALL_PASSES.slice(passIndex,passIndex+5).map((p,i)=>{
+{ALL_COMBINED_PASSES.slice(passIndex,passIndex+5).map((p,i)=>{
 const col=passColor(p.type);
 return (
 <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
 <span style={{fontSize:"0.62rem",color:C.faint,minWidth:48}}>{p.pass}</span>
-<span style={{fontSize:"0.65rem",background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"3px 10px",borderRadius:5,fontWeight:700}}>{p.type}</span>
+<span style={{fontSize:"0.65rem",background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"3px 10px",borderRadius:5,fontWeight:700}}>{p.type}{p.giantDay?` D${p.giantDay}`:""}</span>
 <span style={{fontSize:"0.58rem",color:C.faint}}>{p.weight}</span>
 </div>
 );
