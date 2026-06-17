@@ -28,7 +28,6 @@
 </style>
 </head>
 <body>
-<script>window.onerror=function(m,s,l,c){document.body.innerHTML='<pre style="padding:20px;color:red;font-size:14px">FEL: '+m+'\nrad: '+l+'\nkol: '+c+'</pre>';};</script> 
 <div id="root"></div>
 <script type="text/babel">
 
@@ -127,7 +126,7 @@ null,
 ];
 
 const ALL_PASSES = WEEK_SCHEDULE.flatMap(w => w.passes.filter(Boolean));
-// ── GIANT 3.0 SCHEMA – från 1 juni ──
+/* ── GIANT 3.0 SCHEMA – från 1 juni ── */
 const GIANT_SCHEDULE = [
 {week:"V1",phase:"Inköring",dateRange:"1–7 jun",passes:[
 {pass:"Pass 1",type:"Giant",detail:"1 rep/set · autoreglerat · ~45 set",weight:"24 kg",giantDay:"1"},
@@ -173,7 +172,7 @@ const GIANT_SCHEDULE = [
 const ALL_GIANT_PASSES = GIANT_SCHEDULE.flatMap(w => w.passes.filter(Boolean));
 
 
-// ── ÅRSPLAN – PROGRAMDATA ──
+/* ── ÅRSPLAN – PROGRAMDATA ── */
 const PROGRAM_PLAN = [
 {
 id:"abf1",
@@ -317,7 +316,7 @@ prehabArms:false,prehabKnees:false,
 bodyLog:"",notes:"",
 };
 
-// Giant: reps per dag-typ
+/* Giant: reps per dag-typ */
 const GIANT_REPS = {"1":1,"2":2,"3":3};
 
 function totalPP(log) {
@@ -326,12 +325,12 @@ return log.steges.reduce((sum,s)=>
 sum+(s.two?.pp||0)+(s.three?.pp||0)+(s.five?.pp||0)+((s.showTen&&s.ten?.pp)||0),0);
 }
 
-// Antal rena/gjorda reps (exkl. 10-stegen om den inte lagts till)
+/* Antal rena/gjorda reps (exkl. 10-stegen om den inte lagts till) */
 function stegeIsDone(s) {
 return (s.two?.done||false)||(s.three?.done||false)||(s.five?.done||false)||(s.showTen&&(s.ten?.done||false));
 }
 
-// ── SUPABASE ──
+/* ── SUPABASE ── */
 async function dbLoadLogs() {
 const {data,error} = await sb.from("training_logs").select("*").order("date",{ascending:false});
 if (error) throw new Error("Fel vid hämtning av loggar: " + error.message);
@@ -409,16 +408,16 @@ const {useState:us, useEffect:ue, useRef:ur} = React;
 const [localDone, setLocalDone] = us(done||false);
 const [localPP, setLocalPP] = us(pp||0);
 const timerRef = ur(null);
-const LOCK_DELAY = 3000; // 3 sekunder inaktivitet → låser cellen
+const LOCK_DELAY = 3000; /* 3 sekunder inaktivitet → låser cellen */
 
-// Synka utifrån om cellen redigeras externt (t.ex. vid edit av gammalt pass)
+/* Synka utifrån om cellen redigeras externt (t.ex. vid edit av gammalt pass) */
 ue(()=>{ setLocalDone(done||false); },[done]);
 ue(()=>{ setLocalPP(pp||0); },[pp]);
 
 function resetTimer() {
 clearTimeout(timerRef.current);
 timerRef.current = setTimeout(()=>{
-// Lås cellen efter inaktivitet – anropa parent med aktuell state
+/* Lås cellen efter inaktivitet – anropa parent med aktuell state */
 onDone(true, localPP);
 setLocalDone(true);
 }, LOCK_DELAY);
@@ -451,7 +450,7 @@ const hasActivity = localDone || localPP > 0;
 const isClean = localPP === 0 && !split;
 const WEIGHTS = ["16","20","24"];
 
-// Färger baserat på state
+/* Färger baserat på state */
 let bg, border;
 if (!hasActivity) { bg=C.surface; border=C.border; }
 else if (localPP > 0) { bg=C.orangeBg; border=C.orangeBorder; }
@@ -567,7 +566,7 @@ return {fontSize:"0.7rem",fontFamily:"'Syne',sans-serif",fontWeight:700,
 background:col.bg,color:col.text,border:`1px solid ${col.border}`,padding:"3px 10px",borderRadius:5};
 }
 
-// ── CHART BLOCK ──
+/* ── CHART BLOCK ── */
 function ChartBlock({title,data,color,max,target,targetLabel,lowerIsBetter}) {
 const w=560,h=140,pad={top:16,right:32,bottom:32,left:28};
 const iw=w-pad.left-pad.right,ih=h-pad.top-pad.bottom;
@@ -602,9 +601,9 @@ return (
 );
 }
 
-// ── MULTI-LINE CHART (för känsla/sömn/stress) ──
+/* ── MULTI-LINE CHART (för känsla/sömn/stress) ── */
 function MultiLineChart({title, series}) {
-// series: [{label, color, data: [{label, val}]}]
+/* series: [{label, color, data: [{label, val}]}] */
 const w=560,h=160,pad={top:20,right:80,bottom:32,left:28};
 const iw=w-pad.left-pad.right,ih=h-pad.top-pad.bottom;
 const allVals=series.flatMap(s=>s.data.map(d=>d.val));
@@ -650,7 +649,7 @@ return (
 );
 }
 
-// ── BAR CHART (för prehab-frekvens) ──
+/* ── BAR CHART (för prehab-frekvens) ── */
 function BarChart({title, data, color, maxVal}) {
 const w=560,h=120,pad={top:16,right:20,bottom:32,left:28};
 const iw=w-pad.left-pad.right,ih=h-pad.top-pad.bottom;
@@ -688,7 +687,7 @@ return (
 );
 }
 
-// ── PROGRAM MODAL ──
+/* ── PROGRAM MODAL ── */
 function ProgramModal({prog, onClose}) {
 if (!prog) return null;
 const col = passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":"");
@@ -748,7 +747,7 @@ Stäng
 );
 }
 
-// ── TIMER ──
+/* ── TIMER ── */
 function TimerView() {
 const [sets, setSets] = useState("20");
 const [secPerSet, setSecPerSet] = useState("90");
@@ -993,7 +992,7 @@ Ny timer
 );
 }
 
-// ── CLAUDE SUMMARY EXPORT ──
+/* ── CLAUDE SUMMARY EXPORT ── */
 function ClaudeSummary({logs, goals, passIndex}) {
 const [copied, setCopied] = useState(false);
 
@@ -1257,8 +1256,8 @@ Genererar en kompakt sammanfattning av din träning – klistra in i Claude för
 );
 }
 
-// ── HISTORY LOG CARD ──
-// Helper: format a single rep-cell summary with weight always visible
+/* ── HISTORY LOG CARD ── */
+/* Helper: format a single rep-cell summary with weight always visible */
 function repSummary(d, reps) {
 if (!d) return null;
 const pp = d.pp || 0;
@@ -1400,7 +1399,7 @@ return (
 );
 }
 
-// ── LOG DETAIL MODAL ──
+/* ── LOG DETAIL MODAL ── */
 function LogDetailModal({l, onClose, onEdit, deleteLog}) {
 if (!l) return null;
 const col = passColor(l.type);
@@ -1534,7 +1533,7 @@ Stäng
 );
 }
 
-// ── COMPACT DESKTOP HISTORY CARD ──
+/* ── COMPACT DESKTOP HISTORY CARD ── */
 function LogCardCompact({l, schedPass, onSelect, confirmId, setConfirmId, deleteLog}) {
 if (!l) {
 return (
@@ -1562,7 +1561,7 @@ onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
 )}
 {l.type==="ABC"&&l.sets&&<div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>Utfall: {l.sets} set · {l.secPerSet}s · Dubbla 24 kg</div>}
 {l.type==="Press"&&l.steges&&(()=>{
-// Show all reps with weight for each stege, always include weight
+/* Show all reps with weight for each stege, always include weight */
 const s=l.steges[l.steges.length-1];
 const parts=[repSummary(s?.two,2),repSummary(s?.three,3),repSummary(s?.five,5)].filter(Boolean);
 return <div style={{fontSize:"0.62rem",color:col.text,fontWeight:600}}>{l.steges.length} stegar · {parts.join(" · ")}</div>;
@@ -1620,7 +1619,7 @@ if (draftVal) {
 try {
 const draft = JSON.parse(draftVal);
 if (!draft.wwRounds || draft.wwRounds.length === 0) draft.wwRounds = [[]];
-// Datum alltid dagens datum, oavsett vad som sparats i draft
+/* Datum alltid dagens datum, oavsett vad som sparats i draft */
 draft.date = todayStr();
 setForm(draft);
 } catch(e) {}
@@ -1659,16 +1658,16 @@ await dbSaveLog(entry);
 const nl=[entry,...logs].sort((a,b)=>b.date.localeCompare(a.date));
 setLogs(nl);
 
-// Auto-markera schema-pass som klart om datum matchar och är nästa pass
+/* Auto-markera schema-pass som klart om datum matchar och är nästa pass */
 const allScheduledPasses = [
 ...WEEK_SCHEDULE.flatMap(w=>w.passes.filter(Boolean)),
 ...GIANT_SCHEDULE.flatMap(w=>w.passes.filter(Boolean)),
 ];
 const currentPass = allScheduledPasses[passIndex];
 const loggedDate = form.date;
-// Kolla om loggad datum faller inom rätt vecka för nuvarande pass
+/* Kolla om loggad datum faller inom rätt vecka för nuvarande pass */
 if (currentPass && !form.id) {
-// Hitta vecko-datumintervall för detta pass
+/* Hitta vecko-datumintervall för detta pass */
 const allRanges = [
 ["2026-03-30","2026-04-06"],["2026-04-07","2026-04-13"],
 ["2026-04-14","2026-04-20"],["2026-04-21","2026-04-27"],
@@ -1680,7 +1679,7 @@ const allRanges = [
 ["2026-06-29","2026-07-05"],["2026-07-06","2026-07-12"],
 ["2026-07-13","2026-07-19"],["2026-07-20","2026-07-26"],
 ];
-// Räkna ut vilken vecko-index detta pass tillhör
+/* Räkna ut vilken vecko-index detta pass tillhör */
 let passCount=0, weekForPass=-1;
 for(let wi=0;wi<WEEK_SCHEDULE.length;wi++){
 const ps=WEEK_SCHEDULE[wi].passes.filter(Boolean);
@@ -1793,7 +1792,7 @@ Laddar…
 </div>
 );
 
-// ── TREND DATA HELPERS ──
+/* ── TREND DATA HELPERS ── */
 function shortDate(d) { return formatDate(d).slice(4); }
 
 const allLogsSorted = [...logs].sort((a,b)=>a.date.localeCompare(b.date));
@@ -1882,7 +1881,7 @@ textDecorationColor:"#90c890",
 <div style={{background:C.accentLight,border:`1px solid ${C.accentMid}`,borderRadius:10,padding:"14px 16px"}}>
 <div style={{...labelStyle,color:C.accentMid}}>Nästa pass</div>
 {nextPass?(()=>{
-// Hitta vecka och vecko-obj – sök i rätt schema
+/* Hitta vecka och vecko-obj – sök i rätt schema */
 let weekNum=1, weekObj=null;
 if(!nextPassIsGiant){
 let idx=0;
@@ -2469,7 +2468,7 @@ return (
 {(()=>{
 const giantLogs=allLogsSorted.filter(l=>l.type==="Giant"&&l.giantSets&&l.giantKg);
 if(giantLogs.length<2) return <Empty text="Logga minst 2 Giant-pass för att se trend"/>;
-// Separera per dag-typ
+/* Separera per dag-typ */
 const byDay={"1":[],"2":[],"3":[]};
 giantLogs.forEach(l=>{const d=l.giantDay||"1";if(byDay[d])byDay[d].push(l);});
 const dayLabels={"1":"Dag 1 (2r)","2":"Dag 2 (3r)","3":"Dag 3 (1r)"};
@@ -2526,7 +2525,7 @@ series={[
 {(()=>{
 const withPrehab=allLogsSorted.filter(l=>l.prehabArms||l.prehabKnees);
 if(withPrehab.length<2) return null;
-// Prehab per vecka
+/* Prehab per vecka */
 const weekCounts={};
 withPrehab.forEach(l=>{
 const d=new Date(l.date+"T12:00:00");
