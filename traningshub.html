@@ -326,6 +326,7 @@ structure:"Tis ABC 20 kg · Tor Press 12 clean + 3 press @ 24 kg · Lör fm ABC 
 startGoal:"17 set @ 1:45 (22 aug, container fylld)",
 endGoal:"30 ABC EMOM dubbla 24 kg · målförsök 31 dec",
 progression:"Containern är alltid 30 min. Enda variabeln är antal set – intervallet följer (1800 ÷ set). +1 set/vecka på lördagar. Deload var fjärde vecka: samma antal set, 20 kg.",
+status:"Nu: 25–26 set på 30 min",
 notes:"KCK utgår. Flaskhalsen är squatsen – puls vid set 10 ligger 139–150 på ABC mot 126–134 på Giant med samma vikt. Snatch tränar noll squats och vänster arm har gett nervkänningar vid snatchvolym. Lördag förmiddag är icke förhandlingsbar: kvällspass efter 19 är konsekvent de svaga.",
 },
 {
@@ -346,9 +347,38 @@ structure:"EMOM = 1 set per minut · 30 set = exakt 30 minuter · Noll pauser",
 startGoal:"Kom in med stark motor från KCK · ABC-teknik på autopilot",
 endGoal:"30 ABC EMOM dubbla 24 kg – klart innan nyår",
 progression:"Inga kompromisser. Antingen klarar du alla 30 set EMOM eller inte.",
+status:"30 EMOM trol. feb–mar 2027",
 notes:"Hela årets progression bygger mot detta. Köp 28 kg när det är klart.",
 },
 ];
+
+/* ── Programoverstyrningar ──
+   PROGRAM_PLAN ar utgangslaget. Allt som Per eller en Claude-chatt skriver om
+   sparas i app_state-nyckeln "goals" under prog_<id> och vinner over
+   grundtexten. Tom strang betyder medvetet tomt, inte "ingen overstyrning",
+   sa ett falt gar att rensa. */
+const PROG_FIELDS = ["period","dateEnd","structure","startGoal","endGoal","progression","notes","status"];
+function mergeProgram(prog, goals) {
+const o = (goals && goals["prog_"+prog.id]) || {};
+const out = {...prog};
+for (const f of PROG_FIELDS) if (typeof o[f] === "string") out[f] = o[f];
+return out;
+}
+
+/* ── Veckoplan ──
+   Planen ar nyckelad pa ISO-vecka. Nar veckan tar slut slutar den visas.
+   Det ar meningen: det tomma kortet ar paminnelsen om att summera veckan
+   och lagga nasta. En gammal plan som ser aktuell ut ar varre an ingen. */
+function isoWeek(d) {
+const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+const day = t.getUTCDay() || 7;
+t.setUTCDate(t.getUTCDate() + 4 - day);
+const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+const w = Math.ceil(((t - y0) / 86400000 + 1) / 7);
+return `${t.getUTCFullYear()}-W${String(w).padStart(2,"0")}`;
+}
+function currentWeek() { return isoWeek(new Date()); }
+function weekLabel(key) { return key ? "v." + Number(key.split("-W")[1]) : ""; }
 
 
 function passColor(type) {
@@ -1356,6 +1386,76 @@ return (
 }
 
 /* ── PROGRAM MODAL ── */
+/* ── VECKANS PASS ──
+   Fritext, en rad per pass. "Tis: ..." far etiketten fetstil, men inget
+   format kravs - bade Per och en Claude-chatt ska kunna skriva rakt in. */
+function WeekPlanCard({plan, onSave}) {
+const wk = currentWeek();
+const live = plan && plan.week === wk ? plan : null;
+const [editing,setEditing] = useState(false);
+const [draft,setDraft] = useState("");
+const [saving,setSaving] = useState(false);
+
+function openEditor() { setDraft(live ? live.text : ""); setEditing(true); }
+async function save() {
+setSaving(true);
+const text = draft.trim();
+await onSave(text ? {week:wk, text, updated:todayStr()} : null);
+setSaving(false); setEditing(false);
+}
+
+const lines = live ? live.text.split("\n").map(x=>x.trim()).filter(Boolean) : [];
+
+return (
+<div style={{background:C.surface,border:`1px solid ${live?C.accentMid:C.border}`,borderRadius:10,padding:"14px 16px",boxShadow:`0 1px 3px ${C.shadow}`}}>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8,gap:8}}>
+<div style={{...labelStyle,color:live?C.accent:C.muted}}>Veckans pass</div>
+<div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.06em"}}>{weekLabel(wk)}</div>
+</div>
+
+{editing?(
+<div style={{display:"flex",flexDirection:"column",gap:8}}>
+<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={5}
+placeholder={"Tis: ABC 20 kg · 18 set @ 1:40\nTor: Press · 7 clean + 3 press @ 24 kg\nLör: ABC 24 kg · 19 set @ 1:35"}
+style={{...IS,fontSize:"16px",resize:"vertical",lineHeight:1.6}}/>
+<div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+<button onClick={save} disabled={saving} style={{background:C.accent,border:"none",color:"#fff",padding:"9px 18px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.78rem",touchAction:"manipulation"}}>{saving?"Sparar…":"Spara"}</button>
+<button onClick={()=>setEditing(false)} style={{background:"transparent",border:`1px solid ${C.border2}`,color:C.muted,padding:"9px 16px",borderRadius:7,cursor:"pointer",fontFamily:"inherit",fontSize:"0.7rem",touchAction:"manipulation"}}>Avbryt</button>
+<span style={{fontSize:"0.55rem",color:C.faint}}>Tom text tar bort planen</span>
+</div>
+</div>
+):live?(
+<div>
+<div style={{display:"flex",flexDirection:"column",gap:5}}>
+{lines.map((ln,i)=>{
+const m = ln.match(/^([^:]{1,16}):\s*(.+)$/);
+return (
+<div key={i} style={{display:"flex",gap:7,alignItems:"baseline",fontSize:"0.72rem",lineHeight:1.55}}>
+<span style={{color:C.accentMid,fontSize:"0.55rem"}}>▪</span>
+{m
+  ? <span><strong style={{color:C.accent}}>{m[1]}</strong> <span style={{color:C.text}}>{m[2]}</span></span>
+  : <span style={{color:C.text}}>{ln}</span>}
+</div>
+);
+})}
+</div>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:11,gap:8}}>
+<span style={{fontSize:"0.55rem",color:C.faint}}>skriven {formatDate(live.updated)}</span>
+<button onClick={openEditor} style={{background:"transparent",border:`1px solid ${C.border2}`,color:C.muted,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:"0.62rem",fontFamily:"inherit",touchAction:"manipulation"}}>Ändra</button>
+</div>
+</div>
+):(
+<div>
+<p style={{fontSize:"0.68rem",color:C.faint,lineHeight:1.7,margin:"2px 0 11px"}}>
+Ingen plan för {weekLabel(wk)} än. Summera förra veckan i Claude-chatten och låt planen landa här – eller skriv den själv.
+</p>
+<button onClick={openEditor} style={{background:"transparent",border:`1px solid ${C.accentMid}`,color:C.accent,padding:"8px 16px",borderRadius:7,cursor:"pointer",fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"0.75rem",touchAction:"manipulation"}}>Skriv veckans plan</button>
+</div>
+)}
+</div>
+);
+}
+
 function ProgramModal({prog, onClose}) {
 if (!prog) return null;
 const col = passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":"");
@@ -1373,6 +1473,7 @@ return (
 </div>
 <div style={{fontSize:"0.68rem",color:C.muted,marginTop:2}}>{prog.fullName}{prog.author?" · "+prog.author:""}</div>
 <div style={{fontSize:"0.62rem",color:C.accent,fontWeight:600,marginTop:2}}>{prog.period}</div>
+{prog.status&&<div style={{fontSize:"0.62rem",color:C.accentMid,marginTop:2}}>({prog.status})</div>}
 </div>
 <button onClick={onClose} style={{background:"transparent",border:"none",color:C.faint,cursor:"pointer",fontSize:"1.4rem",padding:0,touchAction:"manipulation"}}>✕</button>
 </div>
@@ -1700,6 +1801,7 @@ setTcxBusy(false);
 const [copied,setCopied]=useState(false);
 const [showBackup,setShowBackup]=useState(false);
 const [localGoals,setLocalGoals]=useState(goals);
+const fieldLbl={display:"block",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:4};
 const [goalsSaved,setGoalsSaved]=useState(false);
 const backupText=JSON.stringify({logs,passIndex,exportedAt:new Date().toISOString()});
 
@@ -1773,13 +1875,17 @@ padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:"0.6rem",fontFamily:
 
 <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:"16px 18px",boxShadow:`0 1px 3px ${C.shadow}`}}>
 <div style={labelStyle}>Årsplan & Programmål</div>
-<p style={{fontSize:"0.65rem",color:C.muted,margin:"8px 0 14px",lineHeight:1.7}}>Redigera start- och slutmål per program. Slutmålet för December är låst.</p>
-{PROGRAM_PLAN.map((prog,i)=>{
+<p style={{fontSize:"0.65rem",color:C.muted,margin:"8px 0 14px",lineHeight:1.7}}>Den levande planen. Allt här går att skriva om – av dig eller av Claude-chatten – och det som står här är det appen visar. Status syns som parentes på förstasidan.</p>
+{PROGRAM_PLAN.map((base,i)=>{
+const prog=mergeProgram(base,localGoals);
 const col=passColor(prog.color==="abc"?"ABC":prog.color==="press"?"Press":prog.color==="ww"?"WW":prog.color==="other"?"Annat":prog.color==="Giant"?"Giant":"");
 const [open,setOpen]=React.useState(false);
-const isLocked=prog.id==="goal";
 const pgKey="prog_"+prog.id;
-const pgGoals=localGoals[pgKey]||{startGoal:prog.startGoal,endGoal:prog.endGoal,notes:prog.notes||""};
+const pgGoals={
+period:prog.period, dateEnd:prog.dateEnd, status:prog.status||"",
+structure:prog.structure, startGoal:prog.startGoal, endGoal:prog.endGoal,
+progression:prog.progression, notes:prog.notes||"",
+};
 function updatePgGoal(field,val){
 setLocalGoals(prev=>({...prev,[pgKey]:{...pgGoals,[field]:val}}));
 }
@@ -1802,30 +1908,47 @@ display:"flex",justifyContent:"space-between",alignItems:"center",
 {open&&(
 <div style={{padding:"12px 14px",background:col.bg,borderTop:`1px solid ${col.border}`}}>
 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-<div>
-<div style={{fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:4}}>Struktur</div>
-<div style={{fontSize:"0.65rem",color:C.muted,lineHeight:1.5}}>{prog.structure}</div>
+<div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+<div style={{flex:"1 1 150px"}}>
+<label style={fieldLbl}>Period</label>
+<input value={pgGoals.period} onChange={e=>updatePgGoal("period",e.target.value)}
+style={{...IS,fontSize:"0.68rem",background:"rgba(255,255,255,0.6)"}}/>
+</div>
+<div style={{flex:"0 1 150px"}}>
+<label style={fieldLbl}>Slutdatum</label>
+<input type="date" value={pgGoals.dateEnd} onChange={e=>updatePgGoal("dateEnd",e.target.value)}
+style={{...IS,fontSize:"0.68rem",background:"rgba(255,255,255,0.6)"}}/>
+</div>
 </div>
 <div>
-<label style={{display:"block",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:4}}>Startmål</label>
+<label style={fieldLbl}>Status – visas som parentes</label>
+<input value={pgGoals.status} onChange={e=>updatePgGoal("status",e.target.value)}
+placeholder="t.ex. Nu: 25–26 set på 30 min" style={{...IS,fontSize:"0.68rem",background:"rgba(255,255,255,0.6)"}}/>
+</div>
+<div>
+<label style={fieldLbl}>Struktur</label>
+<textarea value={pgGoals.structure} onChange={e=>updatePgGoal("structure",e.target.value)}
+rows={3} style={{...IS,fontSize:"0.68rem",resize:"vertical",background:"rgba(255,255,255,0.6)"}}/>
+</div>
+<div>
+<label style={fieldLbl}>Startmål</label>
 <textarea value={pgGoals.startGoal} onChange={e=>updatePgGoal("startGoal",e.target.value)}
 rows={2} style={{...IS,fontSize:"0.68rem",resize:"vertical",background:"rgba(255,255,255,0.6)"}}/>
 </div>
 <div>
-<label style={{display:"block",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:isLocked?"#B84040":col.text,fontWeight:600,marginBottom:4}}>
-Slutmål 🎯 {isLocked&&"· 🔒 låst"}
-</label>
-{isLocked?(
-<div style={{background:"rgba(255,255,255,0.5)",borderRadius:6,padding:"8px 10px",fontSize:"0.72rem",color:col.text,fontWeight:600,lineHeight:1.6}}>{pgGoals.endGoal}</div>
-):(
+<label style={{...fieldLbl,color:col.text}}>Slutmål 🎯</label>
 <textarea value={pgGoals.endGoal} onChange={e=>updatePgGoal("endGoal",e.target.value)}
 rows={2} style={{...IS,fontSize:"0.68rem",resize:"vertical",background:"rgba(255,255,255,0.6)",fontWeight:600,color:col.text}}/>
-)}
 </div>
 <div>
-<label style={{display:"block",fontSize:"0.55rem",letterSpacing:"0.1em",textTransform:"uppercase",color:C.faint,fontWeight:600,marginBottom:4}}>Noteringar</label>
+<label style={fieldLbl}>Progression</label>
+<textarea value={pgGoals.progression} onChange={e=>updatePgGoal("progression",e.target.value)}
+rows={3} style={{...IS,fontSize:"0.68rem",resize:"vertical",background:"rgba(255,255,255,0.6)"}}/>
+</div>
+<div>
+<label style={fieldLbl}>Noteringar</label>
 <textarea value={pgGoals.notes} onChange={e=>updatePgGoal("notes",e.target.value)}
-rows={2} placeholder="Löpande tankar om programmet..." style={{...IS,fontSize:"0.65rem",resize:"vertical",background:"rgba(255,255,255,0.6)"}}/>
+rows={3} placeholder="Löpande tankar om programmet..." style={{...IS,fontSize:"0.65rem",resize:"vertical",background:"rgba(255,255,255,0.6)"}}/>
 </div>
 </div>
 </div>
@@ -2427,18 +2550,20 @@ programName:"ABF", goalDate:"31 dec 2026",
 const [passOutcomes,setPassOutcomes]=useState({});
 const [quote]=useState(()=>QUOTES[Math.floor(Math.random()*QUOTES.length)]);
 const [selectedProgram,setSelectedProgram]=useState(null);
+const [weekPlan,setWeekPlan]=useState(null);
 const draftTimerRef = useRef(null);
 
 useEffect(()=>{
 async function load() {
 try {
-const [fetchedLogs, idxVal, draftVal, outcomesVal, habitsVal, goalsVal] = await Promise.all([
+const [fetchedLogs, idxVal, draftVal, outcomesVal, habitsVal, goalsVal, weekVal] = await Promise.all([
 dbLoadLogs(),
 dbLoadState("pass-index"),
 dbLoadState(DRAFT_KEY),
 dbLoadState("pass-outcomes"),
 dbLoadState(HABITS_KEY),
 dbLoadState("goals"),
+dbLoadState("week-plan"),
 ]);
 setLogs(fetchedLogs);
 if (idxVal !== null) setPassIndex(Number(idxVal));
@@ -2463,6 +2588,7 @@ if (habitsVal) {
 try { setHabits(JSON.parse(habitsVal)||{}); } catch(e) {}
 }
 if (goalsVal) { try { setGoals(g=>({...g,...JSON.parse(goalsVal)})); } catch(e) {} }
+if (weekVal) { try { setWeekPlan(JSON.parse(weekVal)); } catch(e) {} }
 } catch(e) {
 setDbError("Databasfel: " + e.message);
 }
@@ -2569,6 +2695,12 @@ setView("history");
 async function saveGoals(g) {
 setGoals(g);
 try { await dbSaveState("goals", JSON.stringify(g)); } catch(e) { console.error(e); }
+}
+
+async function saveWeekPlan(plan) {
+setWeekPlan(plan);
+try { await dbSaveState("week-plan", JSON.stringify(plan||null)); }
+catch(e) { alert("Kunde inte spara veckans plan: "+e.message); }
 }
 
 async function deleteLog(id) {
@@ -2748,7 +2880,8 @@ return (
 <div style={{fontSize:"0.55rem",color:C.faint,letterSpacing:"0.06em"}}>tryck för detaljer</div>
 </div>
 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-{PROGRAM_PLAN.map((prog,i)=>{
+{PROGRAM_PLAN.map((base,i)=>{
+const prog=mergeProgram(base,goals);
 const today=todayStr();
 const isPast=prog.dateEnd<today;
 const isCurrent=!isPast&&prog.dateRange<=today&&prog.dateEnd>=today;
@@ -2771,12 +2904,15 @@ textDecoration:isPast?"line-through":"none",
 textDecorationColor:"#90c890",
 }}>{prog.icon} {prog.label}</div>
 <div style={{fontSize:"0.55rem",color:isCurrent?C.accentMid:isPast?"#4a8a4a":C.faint,letterSpacing:"0.06em",marginTop:1}}>{prog.period}</div>
+{prog.status&&<div style={{fontSize:"0.5rem",color:isCurrent?C.accent:C.faint,marginTop:1,maxWidth:170}}>({prog.status})</div>}
 {isCurrent&&<div style={{fontSize:"0.5rem",color:C.accent,marginTop:1}}>▶ Pågår</div>}
 </button>
 );
 })}
 </div>
 </div>
+
+<WeekPlanCard plan={weekPlan} onSave={saveWeekPlan}/>
 
 <div style={cardStyle}>
 <div style={labelStyle}>Senaste pass</div>
