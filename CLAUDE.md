@@ -10,8 +10,6 @@ React via CDN, Supabase-projekt `amtzgpiddevnuoxpvevj`. Deployas av Vercel vid p
 - Filer flyttas som filer (git eller filuppladdning), aldrig via urklipp – urklipp förstör radbrytningar.
 
 ## Säkerhet
-
-## Säkerhet
 - Inloggning krävs (formuläret längst ner i `traningshub.html` startar appen via `window.__startHub`). Samma konto som Gläntan.
 - training_logs och app_state har kolumnen owner (default auth.uid()). Begränsande policy `hub_only_owner` släpper bara igenom ägarens rader; anon har inga rättigheter. Ändra aldrig så att något blir läsbart för anon.
 - Trigger `hub_claim` på auth.users ger rader utan ägare till Pers konto när det bekräftas.
